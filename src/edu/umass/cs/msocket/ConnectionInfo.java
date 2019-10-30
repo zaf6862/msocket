@@ -60,6 +60,7 @@ import edu.umass.cs.msocket.mobility.MobilityManagerClient;
 
 public class ConnectionInfo
 {
+  private static final boolean USE_OPTIMIZATION               = true;
   // max unacked bytes, before which it sends ack
   private static final int         ACK_SEND_THRESH            = MWrappedOutputStream.WRITE_CHUNK_SIZE * 3;
 
@@ -243,7 +244,7 @@ public class ConnectionInfo
   {
 	this.connID = connID;
 	this.serverController = serverController;
-    obuffer = new OutBuffer();
+    obuffer = new OutBuffer(USE_OPTIMIZATION);
     ibuffer = new InBufferOutOrder();
     socketMap = new HashMap<Integer, SocketInfo>();
 

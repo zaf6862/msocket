@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import edu.umass.cs.msocket.logger.MSocketLogger;
+import io.netty.buffer.ByteBuf;
 // import sun.jvm.hotspot.utilities.soql.MapScriptObject;
 
 /**
@@ -37,10 +38,10 @@ import edu.umass.cs.msocket.logger.MSocketLogger;
 
 public class OutBuffer
 {
-  public static final int MAX_OUTBUFFER_SIZE = 30000000;                                   // 30MB
 
+  private static boolean USE_OPTIMIZATION = false;
   ArrayList<byte[]>       sbuf               = null;
-
+  ArrayList<ByteBuffer>   sbuf_optim         = null;
   /*
    * Same as ConnectionInfo.dataSendSeq, this is the sequence number of the next
    * byte to be sent.
@@ -89,9 +90,17 @@ public class OutBuffer
                                                                                             // for
                                                                                             // ACK
 
-  OutBuffer()
+  OutBuffer(boolean use_optimization)
   {
-    sbuf = new ArrayList<byte[]>();
+    USE_OPTIMIZATION = use_optimization;
+
+    if(use_optimization){
+      sbuf_optim = new ArrayList<ByteBuffer>();
+    }else
+    {
+      sbuf = new ArrayList<byte[]>();
+    }
+
   }
 
   public synchronized boolean add(byte[] src, int offset, int length)
@@ -105,24 +114,41 @@ public class OutBuffer
       MSocketLogger.getLogger().log(Level.FINE,"Local write fail JVM Heap memeory threshold exceeded");
       return false;
     }
-    byte[] dst = null;
+    if(USE_OPTIMIZATION){
+      ByteBuffer dst = ByteBuffer.wrap(src,offset,length);
+//      dst.wrap(src,offset,length);
+//      dst.flip();
+      sbuf_optim.add(dst);
+      dataSendSeq += length;
+    }else{
+      byte[] dst = null;
 
-    dst = new byte[length];
+      dst = new byte[length];
 
-    System.arraycopy(src, offset, dst, 0, length);
-    sbuf.add(dst);
-    dst=null;
-    dataSendSeq += length;
+      System.arraycopy(src, offset, dst, 0, length);
+      sbuf.add(dst);
+      dataSendSeq += length;
+    }
+
     return true;
   }
 
   public synchronized int getOutbufferSize()
   {
-    int i = 0;
     int sizeinbytes = 0;
-    for (i = 0; i < sbuf.size(); i++)
-    {
-      sizeinbytes += sbuf.get(i).length;
+    if(USE_OPTIMIZATION){
+        for(int i=0;i< sbuf_optim.size();i++){
+          sizeinbytes += sbuf_optim.get(i).capacity();
+        }
+
+    }else{
+      int i = 0;
+
+      for (i = 0; i < sbuf.size(); i++)
+      {
+        sizeinbytes += sbuf.get(i).length;
+      }
+
     }
     return sizeinbytes;
   }
@@ -137,17 +163,33 @@ public class OutBuffer
     if (ack - dataBaseSeq <= 0 || ack - dataSendSeq > 0)
       return false;
     dataBaseSeq = ack;
-    while ((ack - dataStartSeq > 0) && sbuf.size() > 0)
-    {
-      byte[] b = sbuf.get(0);
-      if (ack - (dataStartSeq + b.length) >= 0)
+    if(USE_OPTIMIZATION){
+      while ((ack - dataStartSeq > 0) && sbuf_optim.size() > 0)
       {
-        sbuf.remove(0);
-        dataStartSeq += b.length;
+        ByteBuffer b = sbuf_optim.get(0).duplicate();
+        int length_buffer = b.limit() - b.position();
+        if (ack - (dataStartSeq + length_buffer) >= 0)
+        {
+          sbuf_optim.remove(0);
+          dataStartSeq += length_buffer;
+        }
+        else
+          break;
+        }
+    }else{
+      while ((ack - dataStartSeq > 0) && sbuf.size() > 0)
+      {
+        byte[] b = sbuf.get(0);
+        if (ack - (dataStartSeq + b.length) >= 0)
+        {
+          sbuf.remove(0);
+          dataStartSeq += b.length;
+        }
+        else
+          break;
       }
-      else
-        break;
     }
+
     return true;
   }
 
@@ -155,29 +197,58 @@ public class OutBuffer
   {
     int curStart = dataStartSeq;
     int freeIndex = -1;
-    for (int i = 0; i < sbuf.size(); i++)
-    {
-      byte[] b = sbuf.get(i);
-      if (curStart + b.length - dataBaseSeq > 0)
+    if(USE_OPTIMIZATION){
+      for (int i = 0; i < sbuf_optim.size(); i++)
       {
-        freeIndex = i;
-        break;
+        ByteBuffer b = sbuf_optim.get(i).duplicate();
+        int length_buffer = b.limit()-b.position();
+        if (curStart + length_buffer - dataBaseSeq > 0)
+        {
+          freeIndex = i;
+          break;
+        }
+        curStart += length_buffer;
       }
-      curStart += b.length;
-    }
-    dataStartSeq = curStart;
+      dataStartSeq = curStart;
 
-    int i = 0;
-    while (i < freeIndex)
-    {
-      sbuf.remove(0); // remove the first element, as element slides left
-      i++;
+      int i = 0;
+      while (i < freeIndex)
+      {
+        sbuf_optim.remove(0); // remove the first element, as element slides left
+        i++;
+      }
+
+    }else{
+      for (int i = 0; i < sbuf.size(); i++)
+      {
+        byte[] b = sbuf.get(i);
+        if (curStart + b.length - dataBaseSeq > 0)
+        {
+          freeIndex = i;
+          break;
+        }
+        curStart += b.length;
+      }
+      dataStartSeq = curStart;
+
+      int i = 0;
+      while (i < freeIndex)
+      {
+        sbuf.remove(0); // remove the first element, as element slides left
+        i++;
+      }
     }
+
   }
 
   public synchronized void releaseOutBuffer()
   {
-    sbuf.clear();
+    if(USE_OPTIMIZATION){
+      sbuf_optim.clear();
+    }else{
+      sbuf.clear();
+    }
+
   }
 
   public synchronized int getDataBaseSeq()
@@ -199,21 +270,44 @@ public class OutBuffer
     if (dataSendSeq - dataBaseSeq <= 0)
       return null;
     ByteBuffer buf = ByteBuffer.wrap(new byte[(int) (dataSendSeq - dataBaseSeq)]);
-    long curStart = dataStartSeq;
-    for (int i = 0; i < sbuf.size(); i++)
-    {
-      byte[] b = sbuf.get(i);
-      if ((curStart + b.length) - dataBaseSeq > 0)
+    if(USE_OPTIMIZATION){
+      long curStart = dataStartSeq;
+      for (int i = 0; i < sbuf_optim.size(); i++)
       {
-        int srcPos = (int) Math.max(0, dataBaseSeq - curStart);
-        buf.put(b, srcPos, b.length - srcPos);
-      }
-      curStart += b.length;
-    }
-    if (buf.array().length == 0){
+        ByteBuffer b = sbuf_optim.get(i);
+        int length_buffer = b.limit()-b.position();
 
-      MSocketLogger.getLogger().log(Level.FINE,"BaseSeq = {0}, SendSeq = {1}", new Object[]{this.dataBaseSeq,this.dataSendSeq});
+        if ((curStart + length_buffer) - dataBaseSeq > 0)
+        {
+          int srcPos = (int) Math.max(0, dataBaseSeq - curStart);
+          byte[] t = b.array();
+          String data_in_string = new String(t);
+          buf.put(t, srcPos, t.length - srcPos);
+        }
+        curStart += length_buffer;
+      }
+      if (buf.array().length == 0){
+
+        MSocketLogger.getLogger().log(Level.FINE,"BaseSeq = {0}, SendSeq = {1}", new Object[]{this.dataBaseSeq,this.dataSendSeq});
+      }
+    }else {
+      long curStart = dataStartSeq;
+      for (int i = 0; i < sbuf.size(); i++)
+      {
+        byte[] b = sbuf.get(i);
+        if ((curStart + b.length) - dataBaseSeq > 0)
+        {
+          int srcPos = (int) Math.max(0, dataBaseSeq - curStart);
+          buf.put(b, srcPos, b.length - srcPos);
+        }
+        curStart += b.length;
+      }
+      if (buf.array().length == 0){
+
+        MSocketLogger.getLogger().log(Level.FINE,"BaseSeq = {0}, SendSeq = {1}", new Object[]{this.dataBaseSeq,this.dataSendSeq});
+      }
     }
+
     return buf.array();
   }
 
@@ -222,63 +316,153 @@ public class OutBuffer
     if (EndSeqNum - startSeqNum <= 0)
       return null;
     ByteBuffer buf = ByteBuffer.wrap(new byte[(int) (EndSeqNum - startSeqNum)]);
-    int curStart = dataStartSeq;
+    if(USE_OPTIMIZATION){
+      int curStart = dataStartSeq;
 
-    for (int i = 0; i < sbuf.size(); i++)
-    {
-      byte[] b = sbuf.get(i);
-      if ((curStart + b.length) - startSeqNum > 0)
+      for (int i = 0; i < sbuf_optim.size(); i++)
       {
-        int srcPos = (int) Math.max(0, startSeqNum - curStart);
-        int copy = 0;
-        if (buf.remaining() - (b.length - srcPos) > 0)
+        ByteBuffer b = sbuf_optim.get(i);
+        int length_buffer = b.limit()-b.position();
+        if ((curStart + length_buffer) - startSeqNum > 0)
         {
-          copy = (b.length - srcPos);
-          buf.put(b, srcPos, copy);
+          int srcPos = (int) Math.max(0, startSeqNum - curStart);
+          int copy = 0;
+          if (buf.remaining() - (length_buffer - srcPos) > 0)
+          {
+            copy = (length_buffer - srcPos);
+            byte[] t = b.array();
+            buf.put(t, srcPos, copy);
+          }
+          else
+          {
+            copy = buf.remaining();
+            byte[] t = b.array();
+            buf.put(t, srcPos, copy);
+            break;
+          }
         }
-        else
-        {
-          copy = buf.remaining();
-          buf.put(b, srcPos, copy);
-          break;
-        }
+        curStart += length_buffer;
       }
-      curStart += b.length;
-    }
-    if (buf.array().length == 0){
+      if (buf.array().length == 0){
 
-      MSocketLogger.getLogger().log(Level.FINE,"BaseSeq = {0}, SendSeq = {1}", new Object[]{startSeqNum,EndSeqNum });
+        MSocketLogger.getLogger().log(Level.FINE,"BaseSeq = {0}, SendSeq = {1}", new Object[]{startSeqNum,EndSeqNum });
+      }
+    }else {
+      int curStart = dataStartSeq;
+
+      for (int i = 0; i < sbuf.size(); i++)
+      {
+        byte[] b = sbuf.get(i);
+        if ((curStart + b.length) - startSeqNum > 0)
+        {
+          int srcPos = (int) Math.max(0, startSeqNum - curStart);
+          int copy = 0;
+          if (buf.remaining() - (b.length - srcPos) > 0)
+          {
+            copy = (b.length - srcPos);
+            buf.put(b, srcPos, copy);
+          }
+          else
+          {
+            copy = buf.remaining();
+            buf.put(b, srcPos, copy);
+            break;
+          }
+        }
+        curStart += b.length;
+      }
+      if (buf.array().length == 0){
+
+        MSocketLogger.getLogger().log(Level.FINE,"BaseSeq = {0}, SendSeq = {1}", new Object[]{startSeqNum,EndSeqNum });
+      }
     }
+
 
     return buf.array();
   }
 
   public String toString()
   {
-    String s = "[";
-    s += "dataSendSeq=" + dataSendSeq + ", ";
-    s += "dataBaseSeq=" + dataBaseSeq + ", ";
-    s += "dataStartSeq=" + dataStartSeq + ", ";
-    s += "numbufs=" + sbuf.size();
-    s += "]";
+    if(USE_OPTIMIZATION){
+      String s = "[";
+      s += "dataSendSeq=" + dataSendSeq + ", ";
+      s += "dataBaseSeq=" + dataBaseSeq + ", ";
+      s += "dataStartSeq=" + dataStartSeq + ", ";
+      s += "numbufs=" + sbuf_optim.size();
+      s += "]";
 
-    return s;
+      return s;
+    }else{
+      String s = "[";
+      s += "dataSendSeq=" + dataSendSeq + ", ";
+      s += "dataBaseSeq=" + dataBaseSeq + ", ";
+      s += "dataStartSeq=" + dataStartSeq + ", ";
+      s += "numbufs=" + sbuf.size();
+      s += "]";
+
+      return s;
+    }
+
   }
 
   public static void main(String[] args)
   {
 
-    OutBuffer ob = new OutBuffer();
+    OutBuffer ob = new OutBuffer(true);
     byte[] b1 = "Test1".getBytes();
     byte[] b2 = "Test2".getBytes();
+    byte[] b3 = "Test3".getBytes();
+    byte[] b4 = "Test4".getBytes();
+//    ByteBuffer b = ByteBuffer.allocate(b1.length);
+//    b.wrap(b1);
+//    byte[] t = b.array();
+//    String t2 = new String(t);
+//    System.out.println(t2);
     ob.add(b1);
+    System.out.println(ob.toString());
+
     // MSocketLogger.getLogger().fine(ob.toString());
     ob.add(b2);
-    // MSocketLogger.getLogger().fine(ob.toString());
+    System.out.println(ob.toString());
+//    // MSocketLogger.getLogger().fine(ob.toString());
+    ob.add(b3);
+    System.out.println(ob.toString());
+//    // MSocketLogger.getLogger().fine(ob.toString());
+    ob.add(b4);
+    System.out.println(ob.toString());
+//    // MSocketLogger.getLogger().fine(ob.toString());
     ob.ack(3);
-    // MSocketLogger.getLogger().fine(ob.toString());
+    String data_in_string = new String(ob.getUnacked());
+    System.out.println(data_in_string);
+    System.out.println(ob.toString());
+//    // MSocketLogger.getLogger().fine(ob.toString());
     ob.ack(4);
+    System.out.println(ob.toString());
+    data_in_string = new String(ob.getUnacked());
+    System.out.println(data_in_string);
+
+    data_in_string = new String(ob.getDataFromOutBuffer(0,5));
+    System.out.println(data_in_string);
     // MSocketLogger.getLogger().fine(ob.toString());
     // MSocketLogger.getLogger().fine(new String(ob.getUnacked()));
+
+
+
+
+
+
+
+//    ByteBuffer bb = ByteBuffer.allocate(8);
+//    bb.wrap(b2);
+////    bb.putInt(5);
+////    bb.putInt(10);
+//    System.out.println(bb.position());
+//    System.out.println(bb.capacity());
+//    bb.flip();
+//    System.out.println(bb.position());
+//    System.out.println(bb.capacity());
+//    System.out.println(bb.toString());
+
+
   }
 }

@@ -16,7 +16,7 @@ import java.util.Random;
 
 public class MSocketServer {
 
-    private static final int    LOCAL_PORT = 6666;
+    private static final int    LOCAL_PORT = 6668;
     private static final String LOCALHOST  = "127.0.0.1";
 
     private static MServerSocket mss = null;
