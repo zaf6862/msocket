@@ -132,8 +132,11 @@ public class BackgroundWritingThread implements Runnable
 	            ArrayList<ByteBuffer> retransmitData = cinfo.getDataFromOutBuffer(byteObj.getStartSeqNum(), byteObj.getStartSeqNum()
 	                + byteObj.getLength());
 	            operStatus = retransmitChunk(retransmitData, byteObj);
-
-	            totalRetransmitBytes = totalRetransmitBytes + retransmitData.length;
+                int len = 0;
+	            for(int i=0;i<retransmitData.size();i++){
+                      len = len + retransmitData.get(i).remaining();
+                }
+	            totalRetransmitBytes = totalRetransmitBytes + len;
 	          }
 	          if(operStatus)
 	          {

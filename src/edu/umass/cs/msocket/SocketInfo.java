@@ -23,13 +23,16 @@
 package edu.umass.cs.msocket;
 
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Vector;
 import java.util.logging.Level;
 
 import edu.umass.cs.msocket.logger.MSocketLogger;
+import io.netty.buffer.ByteBuf;
 
 /**
  * This class keeps the information about each flowpath. It stores the socket,
@@ -86,7 +89,7 @@ public class SocketInfo
   private boolean               stateChangeLock                = false;
 
   private long                  lastKeepAlive                  = 0;
-  private Queue<byte[]>         sendingQueue                   = null;
+  private Queue<ArrayList<ByteBuffer>>         sendingQueue                   = null;
   /*
    * due to non-blocking writes current chunk may not be written completely in
    * one go. so this variable maintain the offset till which it's been written.
@@ -135,11 +138,12 @@ public class SocketInfo
     chunkReadOffsetSeqNum = 0; // may not be related to sending seq num
     chunkEndSeqNum = 0;        // may not be related to sending seq num
     active = true;
-    sendingQueue = new LinkedList<byte[]>();
+    sendingQueue = new LinkedList<ArrayList<ByteBuffer>>();
     byteInfoVector = new Vector<ByteRangeInfo>();
   }
 
-  public Object queueOperations(int operType, byte[] putObject)
+  //TAG: changed the method interface here
+  public Object queueOperations(int operType, ArrayList<ByteBuffer> putObject)
   {
     synchronized (queueMonitor)
     {

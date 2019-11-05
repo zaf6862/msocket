@@ -1969,23 +1969,34 @@ public class ConnectionInfo
   public void attemptSocketWrite(SocketInfo Obj) throws IOException
   {
     Obj.getDataChannel().configureBlocking(false);
-
-    byte[] writebuf = (byte[]) Obj.queueOperations(SocketInfo.QUEUE_GET, null);
-    int curroffset = Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET);
-    ByteBuffer bytebuf = ByteBuffer.allocate(writebuf.length - curroffset);
-
-    bytebuf.put(writebuf, curroffset, writebuf.length - curroffset);
-    bytebuf.flip();
+    //TAG: Come back to this
+    ArrayList<ByteBuffer> writebuf = (ArrayList<ByteBuffer>) Obj.queueOperations(SocketInfo.QUEUE_GET, null);
+    int len = 0;
+    for(int i=0;i<writebuf.size();i++){
+      len = len + writebuf.get(i).remaining();
+    }
     long startTime = System.currentTimeMillis();
-    int gotWritten = Obj.getDataChannel().write(bytebuf);
+    for(int i=0;i<writebuf.size();i++){
+      while(writebuf.get(i).hasRemaining()){
+        Obj.getDataChannel().write(writebuf.get(i));
+      }
+    }
+    int gotWritten = len;
+//    int curroffset = Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET);
+//    ByteBuffer bytebuf = ByteBuffer.allocate(writebuf.length - curroffset);
+//
+//    bytebuf.put(writebuf, curroffset, writebuf.length - curroffset);
+//    bytebuf.flip();
+
+//    int gotWritten = Obj.getDataChannel().write(bytebuf);
 
     if (gotWritten > 0)
     {
-      MSocketLogger.getLogger().log(Level.FINE, "Wrote {0}, wriebuffer length {1}, SendBufferSize {2}, SocketID {3}.", new Object[]{gotWritten,writebuf.length,Obj.getSocket().getSendBufferSize(), Obj.getSocketIdentifer()});
+      MSocketLogger.getLogger().log(Level.FINE, "Wrote {0}, wriebuffer length {1}, SendBufferSize {2}, SocketID {3}.", new Object[]{gotWritten,len,Obj.getSocket().getSendBufferSize(), Obj.getSocketIdentifer()});
       Obj.currentChunkWriteOffsetOper(gotWritten, SocketInfo.VARIABLE_UPDATE);
     }
 
-    if (Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET) == writebuf.length) // completely
+    if (Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET) == len) // completely
                                                                                          // written,
                                                                                          // time
                                                                                          // to
@@ -1999,7 +2010,7 @@ public class ConnectionInfo
                                                                                          // it
     {
 
-      MSocketLogger.getLogger().log(Level.FINE, "Writebuffer length {0}", writebuf.length);
+      MSocketLogger.getLogger().log(Level.FINE, "Writebuffer length {0}", len);
       Obj.currentChunkWriteOffsetOper(0, SocketInfo.VARIABLE_SET);
       Obj.queueOperations(SocketInfo.QUEUE_REMOVE, null);
     }

@@ -135,24 +135,37 @@ public abstract class MultipathWritingPolicy {
 	  {
 
 	    Obj.getDataChannel().configureBlocking(false);
+	    //TAG: come back to this
+	    ArrayList<ByteBuffer> writebuf = (ArrayList<ByteBuffer>) Obj.queueOperations(SocketInfo.QUEUE_GET, null);
 
-	    byte[] writebuf = (byte[]) Obj.queueOperations(SocketInfo.QUEUE_GET, null);
-	    int curroffset = Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET);
-	    ByteBuffer bytebuf = ByteBuffer.allocate(writebuf.length - curroffset);
+		  int len = 0;
+		  for(int i=0;i<writebuf.size();i++){
+			  len = len + writebuf.get(i).remaining();
+		  }
+		  long startTime = System.currentTimeMillis();
+		  for(int i=0;i<writebuf.size();i++){
+			  while(writebuf.get(i).hasRemaining()){
+				  Obj.getDataChannel().write(writebuf.get(i));
+			  }
+		  }
+		  int gotWritten = len;
 
-	    bytebuf.put(writebuf, curroffset, writebuf.length - curroffset);
-	    bytebuf.flip();
-	    long startTime = System.currentTimeMillis();
-	    int gotWritten = Obj.getDataChannel().write(bytebuf);
+//	    int curroffset = Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET);
+//	    ByteBuffer bytebuf = ByteBuffer.allocate(writebuf.length - curroffset);
+//
+//	    bytebuf.put(writebuf, curroffset, writebuf.length - curroffset);
+//	    bytebuf.flip();
+//	    long startTime = System.currentTimeMillis();
+//	    int gotWritten = Obj.getDataChannel().write(bytebuf);
 
 	    if (gotWritten > 0)
 	    {
 
-	      MSocketLogger.getLogger().log(Level.FINE,"Wrote {0} bytes, buffer length is {1}, SocketID {2}", new Object[]{gotWritten,writebuf.length,Obj.getSocketIdentifer()});
+	      MSocketLogger.getLogger().log(Level.FINE,"Wrote {0} bytes, buffer length is {1}, SocketID {2}", new Object[]{gotWritten,len,Obj.getSocketIdentifer()});
 	      Obj.currentChunkWriteOffsetOper(gotWritten, SocketInfo.VARIABLE_UPDATE);
 	    }
 
-	    if (Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET) == writebuf.length) // completely
+	    if (Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET) == len) // completely
 	                                                                                         // written,
 	                                                                                         // time
 	                                                                                         // to
@@ -166,7 +179,7 @@ public abstract class MultipathWritingPolicy {
 	                                                                                         // it
 	    {
 
-	      MSocketLogger.getLogger().log(Level.FINE,"currentChunkWriteOffset: {0}", writebuf.length);
+	      MSocketLogger.getLogger().log(Level.FINE,"currentChunkWriteOffset: {0}", len);
 	      Obj.currentChunkWriteOffsetOper(0, SocketInfo.VARIABLE_SET);
 	      Obj.queueOperations(SocketInfo.QUEUE_REMOVE, null);
 	    }

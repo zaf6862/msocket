@@ -22,6 +22,8 @@
 package edu.umass.cs.msocket.common.policies;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
 import java.util.Vector;
@@ -111,9 +113,13 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
 
           // System.arraycopy(b, offset + currpos, buf, 0, tobesent);
           int arrayCopyOffset = offset + currpos;
-          DataMessage dm = new DataMessage(MesgType, tempDataSendSeqNum, cinfo.getDataAckSeq(), tobesent, 0, b,
+          //TAG: changed the logic here.
+          ByteBuffer bytebuff = ByteBuffer.wrap(b,offset+currpos,offset+currpos+tobesent);
+          ArrayList<ByteBuffer> bytebuff_list = new ArrayList<ByteBuffer>();
+          bytebuff_list.add(bytebuff);
+          DataMessage dm = new DataMessage(MesgType, tempDataSendSeqNum, cinfo.getDataAckSeq(), tobesent, 0, bytebuff_list,
               arrayCopyOffset);
-          byte[] writebuf = dm.getBytes();
+          ArrayList<ByteBuffer> writebuf = dm.getBytes();
 
           // exception of write means that socket is undergoing migration,
           // make it not active, and transfer same data chunk over another
