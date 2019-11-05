@@ -24,6 +24,7 @@ package edu.umass.cs.msocket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import edu.umass.cs.msocket.logger.MSocketLogger;
 
@@ -118,23 +119,33 @@ public class ResendIfNeededThread implements Runnable
 
     if (tempDataSendSeqNum - dataAck > 0)
     {
-      byte[] buf = cinfo.getDataFromOutBuffer(dataAck, tempDataSendSeqNum);
 
+      //TAG: changed the datamessage structure here.
+      ArrayList<ByteBuffer> buf = cinfo.getDataFromOutBuffer(dataAck, tempDataSendSeqNum);
+      int len = 0;
+      for(int i=0;i<buf.size();i++){
+        len = len + buf.get(i).remaining();
+      }
       // FIXME: change it to chunks
+
+
       int arrayCopyOffset =0;
-      DataMessage dm = new DataMessage(DataMessage.DATA_MESG, dataAck, cinfo.getDataAckSeq(), buf.length, 0, buf, arrayCopyOffset);
-      byte[] writebuf = dm.getBytes();
+      DataMessage dm = new DataMessage(DataMessage.DATA_MESG, dataAck, cinfo.getDataAckSeq(), len, 0, buf, arrayCopyOffset);
+      ArrayList<ByteBuffer> writebuf = dm.getBytes();
 
       // exception of wite means that socket is undergoing migration, make it
       // not active, and transfer same data chunk over another available socket.
       // at receiving side, recevier will take care of redundantly received data
-      ByteBuffer writeByBuff = ByteBuffer.wrap(writebuf);
-      while (writeByBuff.hasRemaining())
-      {
-        Obj.getSocket().getChannel().write(writeByBuff);
+//      ByteBuffer writeByBuff = ByteBuffer.wrap(writebuf);
+      for(int j=0;j<writebuf.size();j++){
+        while (writebuf.get(j).hasRemaining())
+        {
+          Obj.getSocket().getChannel().write(writebuf.get(j));
+        }
       }
 
-      Obj.updateSentBytes(buf.length);
+
+      Obj.updateSentBytes(len);
     }
     Obj.setneedToReqeustACK(false);
   }
@@ -150,10 +161,10 @@ public class ResendIfNeededThread implements Runnable
         try
         {
           DataMessage dm = new DataMessage(mesgType, cinfo.getDataSendSeq(), cinfo.getDataAckSeq(), 0, 0, null, -1);
-          byte[] writebuf = dm.getBytes();
+          ArrayList<ByteBuffer> writebuf = dm.getBytes();
 
           MSocketLogger.getLogger().log(Level.FINE,"Using socketID {0} for writing FIN.",Obj.getSocketIdentifer());
-          ByteBuffer writeByBuff = ByteBuffer.wrap(writebuf);
+          ByteBuffer writeByBuff = writebuf.get(0);
 
           while (writeByBuff.hasRemaining())
           {

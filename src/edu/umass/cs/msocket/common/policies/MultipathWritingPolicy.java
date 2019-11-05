@@ -23,6 +23,7 @@ package edu.umass.cs.msocket.common.policies;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Vector;
 import java.util.logging.Level;
 import edu.umass.cs.msocket.ByteRangeInfo;
@@ -108,13 +109,16 @@ public abstract class MultipathWritingPolicy {
 	        continue;
 	      }
 
-	      byte[] buf = cinfo.getDataFromOutBuffer(currByteR.getStartSeqNum(),
+	      ArrayList<ByteBuffer> buf = cinfo.getDataFromOutBuffer(currByteR.getStartSeqNum(),
 	          currByteR.getStartSeqNum() + currByteR.getLength());
-
+			int len = 0;
+			for(int iter=0;iter<buf.size();iter++){
+				len = len + buf.get(iter).remaining();
+			}
 	      int arrayCopyOffset = 0;
 	      DataMessage dm = new DataMessage(DataMessage.DATA_MESG, (int) currByteR.getStartSeqNum(), cinfo.getDataAckSeq(),
-	          buf.length, 0, buf, arrayCopyOffset);
-	      byte[] writebuf = dm.getBytes();
+	          len, 0, buf, arrayCopyOffset);
+	      ArrayList<ByteBuffer> writebuf = dm.getBytes();
 
 	      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
 	      attemptSocketWrite(Obj);
