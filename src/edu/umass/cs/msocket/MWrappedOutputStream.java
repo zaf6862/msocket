@@ -147,8 +147,9 @@ public class MWrappedOutputStream extends OutputStream
     if (length != 0)
     {
       {
+        long t_addOutBuffer = System.currentTimeMillis();
         cinfo.addOutBuffer(b, offset, length); // first write to outbuffer
-
+        DelayProfiler.updateDelay("add_output_buffer",t_addOutBuffer);
         MSocketLogger.getLogger().log(Level.FINE, "Write buff[0]: {0}", b[0]);
       }
     }

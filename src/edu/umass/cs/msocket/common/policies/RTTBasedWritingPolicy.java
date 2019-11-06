@@ -28,12 +28,8 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.Vector;
 import java.util.logging.Level;
-import edu.umass.cs.msocket.ConnectionInfo;
-import edu.umass.cs.msocket.DataMessage;
-import edu.umass.cs.msocket.MSocketConstants;
-import edu.umass.cs.msocket.MWrappedOutputStream;
-import edu.umass.cs.msocket.MultipathPolicy;
-import edu.umass.cs.msocket.SocketInfo;
+
+import edu.umass.cs.msocket.*;
 import edu.umass.cs.msocket.logger.MSocketLogger;
 
 /**
@@ -110,32 +106,16 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
            * handleDupAckRetransmission(Obj); }
            */
 
-          // System.arraycopy(b, offset + currpos, buf, 0, tobesent);
           int arrayCopyOffset = offset + currpos;
           //TAG: changed the logic here.
-//          System.out.println("This is the offset " + Integer.toString(offset));
-//          System.out.println("This is the currpos " + Integer.toString(currpos));
-//          System.out.println("This is the tobesent " + Integer.toString(tobesent));
-//          System.out.println("This is the start " + Integer.toString(offset+currpos));
-//          System.out.println("This is the end " + Integer.toString(offset+currpos+tobesent));
-//          System.out.println("this is the length of the byte array " + Integer.toString(b.length));
-//          System.out.println("this is the ackseq when you write to the header " + Integer.toString(cinfo.getDataAckSeq()));
-//          System.out.println("this is the MsgType when you write to the header " + Integer.toString(MesgType));
-//          System.out.println("this is the tempDataSendSeqNum when you write to the header " + Integer.toString(MesgType));
-//          System.out.println("this is the tobesent when you write to the header " + Integer.toString(MesgType));
-//          byte[] test_byte_array = new byte[tobesent];
-//          int j=0;
-//          for(int i=offset+currpos;i<=offset+currpos+tobesent;i++){
-//            test_byte_array[j] = b[i];
-//            j = j+1;
-//          }
+          long t_make_new_packet = System.currentTimeMillis();
           ByteBuffer bytebuff = ByteBuffer.wrap(b,offset+currpos,tobesent);
           ArrayList<ByteBuffer> bytebuff_list = new ArrayList<ByteBuffer>();
           bytebuff_list.add(bytebuff);
           DataMessage dm = new DataMessage(MesgType, tempDataSendSeqNum, cinfo.getDataAckSeq(), tobesent, 0, bytebuff_list,
               arrayCopyOffset);
           ArrayList<ByteBuffer> writebuf = dm.getBytes();
-
+          DelayProfiler.updateDelay("rtx_make_new_packet_time",t_make_new_packet);
           // exception of write means that socket is undergoing migration,
           // make it not active, and transfer same data chunk over another
           // available socket.
@@ -154,9 +134,11 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
 	          Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
 	          Obj.byteInfoVectorOperations(SocketInfo.QUEUE_PUT, tempDataSendSeqNum, tobesent);
 	        }
-
+          long attempt_socket_write_time_2 = System.currentTimeMillis();
 	        cinfo.attemptSocketWrite(Obj);
-	        if (cinfo.getServerOrClient() == MSocketConstants.CLIENT)
+          DelayProfiler.updateDelay("rtx_attempt_socket_write_time",attempt_socket_write_time_2);
+
+          if (cinfo.getServerOrClient() == MSocketConstants.CLIENT)
 	        {
 
 	        MSocketLogger.getLogger().log(Level.FINE,"Using socketID {0}, Remote IP {1}, for writing tempDataSendSeqNum: {2}.", new Object[]{Obj.getSocketIdentifer(),Obj.getSocket().getInetAddress(),tempDataSendSeqNum});

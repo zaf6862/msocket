@@ -1980,6 +1980,7 @@ public class ConnectionInfo
         Obj.getDataChannel().write(writebuf.get(i));
       }
     }
+    DelayProfiler.updateDelay("s_attempt_socket_write_write", startTime);
     int gotWritten = len;
 //    int curroffset = Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET);
 //    ByteBuffer bytebuf = ByteBuffer.allocate(writebuf.length - curroffset);

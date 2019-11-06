@@ -75,16 +75,17 @@ public class MSocketServer {
                 // client sends 0 to close the socket
                 long run_number = 0;
                 while(numRead >= 0) {
-                    System.out.println("Round Numebr : " + run_number);
-                    long start = System.nanoTime();
+//                    System.out.println("Round Numebr : " + run_number);
+                    long start = System.currentTimeMillis();
 
                     // get number of bytes to send
                     byte[] numByteArr = new byte[4];
                     try {
-                        long read_time_start = System.nanoTime();
+                        long read_time_start = System.currentTimeMillis();
                         is.read(numByteArr);
-                        long read_time_elapsed = System.nanoTime() - read_time_start;
-                        System.out.println("MSocket read from the client time is: " + read_time_elapsed / 1000000 + " ms");
+                        DelayProfiler.updateDelay("app_read_time",read_time_start);
+//                        long read_time_elapsed = System.currentTimeMillis() - read_time_start;
+//                        System.out.println("MSocket read from the client time is: " + read_time_elapsed + " ms");
                         ByteBuffer wrapped = ByteBuffer.wrap(numByteArr);
                         numRead = wrapped.getInt();
                     } catch (IOException e) {
@@ -100,24 +101,25 @@ public class MSocketServer {
                         new Random().nextBytes(b);
 
                         try {
-                             long write_time_start = System.nanoTime();
-                             os.write(b);
-                             os.flush();
-                             long write_time_elapsed = System.nanoTime() - write_time_start;
-                             System.out.println("MSocket Time to write to the socket is: " + write_time_elapsed/1000000   + " ms");
+                            long write_time_start = System.currentTimeMillis();
+                            os.write(b);
+                            DelayProfiler.updateDelay("app_write_time",write_time_start);
+//                             long write_time_elapsed = System.currentTimeMillis() - write_time_start;
+//                             System.out.println("MSocket Time to write to the socket is: " + write_time_elapsed/1000000   + " ms");
 
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                         // reset
                         numRead = 0;
-                        long elapsed = System.nanoTime() - start;
-                        LocalDateTime now = LocalDateTime.now();
-                        System.out.println("[" + dtf.format(now) + "] Data sending finished. App level write time " + elapsed/1000000  + " ms");
+                        DelayProfiler.updateDelay("app_transfer_time",start);
+//                        long elapsed = System.nanoTime() - start;
+//                        LocalDateTime now = LocalDateTime.now();
+//                        System.out.println("[" + dtf.format(now) + "] Data sending finished. App level write time " + elapsed/1000000  + " ms");
                     }
                     run_number += 1;
                 }
-
+                System.out.println("Delay Profiler Stats "+ DelayProfiler.getStats());
                 try {
                     msocket.close();
                 } catch (IOException e) {
