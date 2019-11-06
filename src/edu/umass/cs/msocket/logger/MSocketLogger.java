@@ -10,10 +10,10 @@ public class MSocketLogger
 	private static Logger LOGGER = null;
 	static
 	{
-		// System.out.println("I am in the logger file and this is the path of the logger config file " + config_file_path );
-		
+
 
 		String config_file_path = System.getProperty("user.dir") + "/logging.properties";
+//		System.out.println("I am in the logger file and this is the path of the logger config file " + config_file_path );
 		System.setProperty("java.util.logging.config.file",config_file_path);
 		LOGGER = Logger.getLogger(MSocketLogger.class.getName());
 

@@ -51,7 +51,7 @@ public class MWrappedOutputStream extends OutputStream
   public static final int      WRITE_CHUNK_SIZE 	= 1000000;
 
   private ConnectionInfo cinfo            			= null;
-  private MultipathPolicy writePolicy				= MultipathPolicy.MULTIPATH_POLICY_REMP;
+  private MultipathPolicy writePolicy				= MultipathPolicy.MULTIPATH_POLICY_RTX_OPT;
 
   /**
    * @param cinfo
@@ -248,7 +248,8 @@ public class MWrappedOutputStream extends OutputStream
     {
       case DataMessage.DATA_MESG :
       {
-    	cinfo.getMultipathWritingPolicy().writeAccordingToPolicy(b, offset, length, MesgType);
+    	MultipathWritingPolicy mpp = cinfo.getMultipathWritingPolicy();
+        mpp.writeAccordingToPolicy(b, offset, length, MesgType);
 
         break;
       }

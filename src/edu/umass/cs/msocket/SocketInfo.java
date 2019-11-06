@@ -90,7 +90,7 @@ public class SocketInfo
 
   private long                  lastKeepAlive                  = 0;
   private Queue<ArrayList<ByteBuffer>>         sendingQueue                   = null;
-  /*
+  /*/
    * due to non-blocking writes current chunk may not be written completely in
    * one go. so this variable maintain the offset till which it's been written.
    */

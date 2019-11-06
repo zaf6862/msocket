@@ -54,7 +54,6 @@ import io.netty.buffer.ByteBuf;
 
 public class ConnectionInfo
 {
-  private static final boolean USE_OPTIMIZATION               = true;
   // max unacked bytes, before which it sends ack
   private static final int         ACK_SEND_THRESH            = MWrappedOutputStream.WRITE_CHUNK_SIZE * 3;
 
@@ -1782,7 +1781,6 @@ public class ConnectionInfo
 	    {
 	      sizeRead = length;
 	    }
-
 	    ByteBuffer buf = ByteBuffer.allocate(sizeRead);
 
 	    if (ndirect > 0)
@@ -1970,6 +1968,7 @@ public class ConnectionInfo
   {
     Obj.getDataChannel().configureBlocking(false);
     //TAG: Come back to this
+    @SuppressWarnings("unchecked")
     ArrayList<ByteBuffer> writebuf = (ArrayList<ByteBuffer>) Obj.queueOperations(SocketInfo.QUEUE_GET, null);
     int len = 0;
     for(int i=0;i<writebuf.size();i++){

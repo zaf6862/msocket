@@ -55,7 +55,6 @@ public abstract class MultipathWritingPolicy {
 
 
 	  /**
-	   * @param tempDataSendSeqNum
 	   * @param Obj
 	   * @throws IOException
 	   */
@@ -136,6 +135,7 @@ public abstract class MultipathWritingPolicy {
 
 	    Obj.getDataChannel().configureBlocking(false);
 	    //TAG: come back to this
+		  // @SuppressWarnings("unchecked")
 	    ArrayList<ByteBuffer> writebuf = (ArrayList<ByteBuffer>) Obj.queueOperations(SocketInfo.QUEUE_GET, null);
 
 		  int len = 0;

@@ -282,7 +282,7 @@ public class OutBuffer
     byte[] b2 = "Test2".getBytes();
     byte[] b3 = "Test3".getBytes();
     byte[] b4 = "Test4".getBytes();
-
+    ByteBuffer bb = ByteBuffer.wrap(b1,0,b1.length+1);
 //    ByteBuffer b = ByteBuffer.allocate(b1.length);
 //    b.wrap(b1);
 //    byte[] t = b.array();
@@ -290,24 +290,24 @@ public class OutBuffer
 //    System.out.println(t2);
 
 
-    ob.add(b1);
-    System.out.println(ob.toString());
+//    ob.add(b1);
+//    System.out.println(ob.toString());
 //    MSocketLogger.getLogger().fine(ob.toString());
-    ob.add(b2);
-    System.out.println(ob.toString());
+//    ob.add(b2);
+//    System.out.println(ob.toString());
     // MSocketLogger.getLogger().fine(ob.toString());
-    ob.add(b3);
-    System.out.println(ob.toString());
+//    ob.add(b3);
+//    System.out.println(ob.toString());
     // MSocketLogger.getLogger().fine(ob.toString());
-    ob.add(b4);
-    System.out.println(ob.toString());
+//    ob.add(b4);
+//    System.out.println(ob.toString());
 
-    ArrayList<ByteBuffer> bbuffer = ob.getDataFromOutBuffer(0,8);
-    for(int i=0;i<bbuffer.size();i++){
-      byte[] ss = new byte[bbuffer.get(i).remaining()];
-      bbuffer.get(i).get(ss);
-      System.out.println(new String(ss));
-    }
+//    ArrayList<ByteBuffer> bbuffer = ob.getDataFromOutBuffer(0,8);
+//    for(int i=0;i<bbuffer.size();i++){
+//      byte[] ss = new byte[bbuffer.get(i).remaining()];
+//      bbuffer.get(i).get(ss);
+//      System.out.println(new String(ss));
+//    }
     // MSocketLogger.getLogger().fine(ob.toString());
 //    ob.ack(5);
 ////    String data_in_string = new String(ob.getUnacked());

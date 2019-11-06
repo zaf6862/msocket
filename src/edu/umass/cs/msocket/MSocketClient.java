@@ -18,9 +18,9 @@ public class MSocketClient {
 
     private static DecimalFormat df = new DecimalFormat("0.00##");
 
-    private static final int TOTAL_ROUND = 1;
+    private static final int TOTAL_ROUND = 10;
 
-    private static int numBytes = 1;
+    private static int numBytes = 2000;
 
 
     public static double calc_avg(Long[] input){
@@ -54,13 +54,13 @@ public class MSocketClient {
         }
         else if(args.length == 1){
             serverIPOrName = args[0];
-	   is_mb = 0;
+            is_mb = 0;
             numOfBytes = numBytes;
         }
 
         if(args.length == 2){
             serverIPOrName = args[0];
-	   is_mb = Integer.parseInt(args[1]);
+	        is_mb = Integer.parseInt(args[1]);
             numOfBytes = numBytes;
         }
 

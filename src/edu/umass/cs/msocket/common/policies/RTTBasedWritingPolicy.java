@@ -55,7 +55,6 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
   @Override
   public void writeAccordingToPolicy(byte[] b, int offset, int length, int MesgType) throws IOException
   {
-
     int currpos = 0;
     int remaining = length;
     int tempDataSendSeqNum = cinfo.getDataSendSeq();
@@ -114,7 +113,23 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
           // System.arraycopy(b, offset + currpos, buf, 0, tobesent);
           int arrayCopyOffset = offset + currpos;
           //TAG: changed the logic here.
-          ByteBuffer bytebuff = ByteBuffer.wrap(b,offset+currpos,offset+currpos+tobesent);
+//          System.out.println("This is the offset " + Integer.toString(offset));
+//          System.out.println("This is the currpos " + Integer.toString(currpos));
+//          System.out.println("This is the tobesent " + Integer.toString(tobesent));
+//          System.out.println("This is the start " + Integer.toString(offset+currpos));
+//          System.out.println("This is the end " + Integer.toString(offset+currpos+tobesent));
+//          System.out.println("this is the length of the byte array " + Integer.toString(b.length));
+//          System.out.println("this is the ackseq when you write to the header " + Integer.toString(cinfo.getDataAckSeq()));
+//          System.out.println("this is the MsgType when you write to the header " + Integer.toString(MesgType));
+//          System.out.println("this is the tempDataSendSeqNum when you write to the header " + Integer.toString(MesgType));
+//          System.out.println("this is the tobesent when you write to the header " + Integer.toString(MesgType));
+//          byte[] test_byte_array = new byte[tobesent];
+//          int j=0;
+//          for(int i=offset+currpos;i<=offset+currpos+tobesent;i++){
+//            test_byte_array[j] = b[i];
+//            j = j+1;
+//          }
+          ByteBuffer bytebuff = ByteBuffer.wrap(b,offset+currpos,tobesent);
           ArrayList<ByteBuffer> bytebuff_list = new ArrayList<ByteBuffer>();
           bytebuff_list.add(bytebuff);
           DataMessage dm = new DataMessage(MesgType, tempDataSendSeqNum, cinfo.getDataAckSeq(), tobesent, 0, bytebuff_list,

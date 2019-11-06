@@ -95,9 +95,12 @@ public class DataMessage
     sendSeq = s;
     ackSeq = a;
     int len = 0;
-    for(int i=0;i<b.size();i++){
-      len = len + b.get(i).remaining();
+    if(b != null){
+      for(int i=0;i<b.size();i++){
+        len = len + b.get(i).remaining();
+      }
     }
+
     if (b == null || l <= len)
       length = l;
     else
