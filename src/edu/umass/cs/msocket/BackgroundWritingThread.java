@@ -23,10 +23,13 @@
 package edu.umass.cs.msocket;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Vector;
 import java.util.logging.Level;
 import edu.umass.cs.msocket.logger.MSocketLogger;
+import io.netty.buffer.ByteBuf;
 
 /**
  * This class implements the threads to do background writes for the default
@@ -126,11 +129,15 @@ public class BackgroundWritingThread implements Runnable
 	          {
 
 	           MSocketLogger.getLogger().log(Level.FINE, " SendingSeqNum: {0}, DataBaseSeqNum: {1}.", new Object[]{byteObj.getStartSeqNum(),cinfo.getDataBaseSeq()});
-	            byte[] retransmitData = cinfo.getDataFromOutBuffer(byteObj.getStartSeqNum(), byteObj.getStartSeqNum()
+	            ArrayList<ByteBuffer> retransmitData = cinfo.getDataFromOutBuffer(byteObj.getStartSeqNum(), byteObj.getStartSeqNum()
 	                + byteObj.getLength());
 	            operStatus = retransmitChunk(retransmitData, byteObj);
-
-	            totalRetransmitBytes = totalRetransmitBytes + retransmitData.length;
+                //TAG: Come back and change this once you have ensured that read latency is not there
+                int len = 0;
+                for(int i=0;i<retransmitData.size();i++){
+                  len = len + retransmitData.get(i).remaining();
+                }
+	            totalRetransmitBytes = totalRetransmitBytes + len;
 	          }
 	          if(operStatus)
 	          {
@@ -159,9 +166,12 @@ public class BackgroundWritingThread implements Runnable
     runningStatus = false;
   }*/
 
-  private boolean retransmitChunk(byte[] retransmitData, ByteRangeInfo byteObj)
+  private boolean retransmitChunk(ArrayList<ByteBuffer> retransmitData, ByteRangeInfo byteObj)
   {
-    int length = retransmitData.length;
+    int length = 0;
+    for(int i=0;i<retransmitData.size();i++){
+      length = length + retransmitData.get(i).remaining();
+    }
     //int currpos = 0;
 
     //int remaining = length;
@@ -199,8 +209,21 @@ public class BackgroundWritingThread implements Runnable
           int arrayCopyOffset = 0;
           DataMessage dm = new DataMessage(DataMessage.DATA_MESG, (int) tempDataSendSeqNum, cinfo.getDataAckSeq(),
               length, 0, retransmitData, arrayCopyOffset);
-          byte[] writebuf = dm.getBytes();
-
+          ArrayList<ByteBuffer> writebuf = dm.getBytes();
+          //TAG: Come back and change this once you have ensured that read latency is not there
+          int len = 0;
+          for (int i=0;i< writebuf.size();i++){
+            len += writebuf.get(i).remaining();
+          }
+          byte[] writebuff = new byte[len];
+          int ind=0;
+          for(int i=0;i<writebuf.size();i++){
+            byte[] t = writebuf.get(i).array();
+            for (int j=0;j<t.length;j++){
+              writebuff[ind] = t[j];
+              ind +=1;
+            }
+          }
           // exception of write means that socket is undergoing migration,
           // make it not active, and transfer same data chuk over another
           // available socket.
@@ -215,7 +238,7 @@ public class BackgroundWritingThread implements Runnable
           }
           else
           {
-            Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
+            Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuff);
           }
 
           cinfo.attemptSocketWrite(Obj);
@@ -298,14 +321,31 @@ public class BackgroundWritingThread implements Runnable
         continue;
       }
 
-      byte[] buf = cinfo.getDataFromOutBuffer(currByteR.getStartSeqNum(),
-          currByteR.getStartSeqNum() + currByteR.getLength());
+      ArrayList<ByteBuffer> buf = cinfo.getDataFromOutBuffer(currByteR.getStartSeqNum(),
+              currByteR.getStartSeqNum() + currByteR.getLength());
+      int len = 0;
+      for(int iter=0;iter<buf.size();iter++){
+        len = len + buf.get(iter).remaining();
+      }
       int arrayCopyOffset = 0;
       DataMessage dm = new DataMessage(DataMessage.DATA_MESG, (int) currByteR.getStartSeqNum(), cinfo.getDataAckSeq(),
-          buf.length, 0, buf, arrayCopyOffset);
-      byte[] writebuf = dm.getBytes();
-
-      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
+              len, 0, buf, arrayCopyOffset);
+      ArrayList<ByteBuffer> writebuf = dm.getBytes();
+      //TAG: Come back and change this once you have ensured that read latency is not there
+      int len2 = 0;
+      for (int iter2=0;iter2< writebuf.size();i++){
+        len2 += writebuf.get(iter2).remaining();
+      }
+      byte[] writebuff = new byte[len2];
+      int ind=0;
+      for(int iter3=0;iter3<writebuf.size();i++){
+        byte[] t = writebuf.get(iter3).array();
+        for (int j=0;j<t.length;j++){
+          writebuff[ind] = t[j];
+          ind +=1;
+        }
+      }
+      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuff);
       cinfo.attemptSocketWrite(Obj);
 
     }

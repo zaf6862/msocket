@@ -31,20 +31,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 import java.util.logging.Level;
 
 import edu.umass.cs.msocket.common.CommonMethods;
-import edu.umass.cs.msocket.common.policies.BlackBoxWritingPolicy;
-import edu.umass.cs.msocket.common.policies.ChunkInformation;
+//import edu.umass.cs.msocket.common.policies.BlackBoxWritingPolicy;
+//import edu.umass.cs.msocket.common.policies.ChunkInformation;
 import edu.umass.cs.msocket.common.policies.MultipathWritingPolicy;
 import edu.umass.cs.msocket.gns.Integration;
 import edu.umass.cs.msocket.logger.MSocketLogger;
@@ -237,7 +229,6 @@ public class ConnectionInfo
   /**
    * Creates a new <code>ConnectionInfo</code> object
    *
-   * @param s
    */
   public ConnectionInfo(long connID , MServerSocketController serverController)
   {
@@ -487,10 +478,13 @@ public class ConnectionInfo
     return dataSendSeq;
   }
 
-  public byte[] getDataFromOutBuffer(int startSeqNum, int EndSeqNum)
+  public ArrayList<ByteBuffer> getDataFromOutBuffer(int startSeqNum, int EndSeqNum)
   {
     return getObuffer().getDataFromOutBuffer(startSeqNum, EndSeqNum);
+//    byte[] b = new byte[10];
+//    return  b;
   }
+
 
   public synchronized void updateDataSendSeq(int s)
   {
@@ -916,7 +910,6 @@ public class ConnectionInfo
 
   /**
    * @param flowID
-   * @param dataChannel
    * @throws IOException
    */
   public void sendDataAckOnly(long flowID, SocketInfo Obj, int ackForSeqNum)
@@ -941,11 +934,12 @@ public class ConnectionInfo
 
       DataMessage dm = new DataMessage(DataMessage.DATA_ACK_REP, getDataSendSeq(), DataAckSeq, ackForSeqNum,
           Obj.getRecvdBytes(), null, -1);
-
-      byte[] buf = dm.getBytes();
+      //TAG: Might need to change this
+      ArrayList<ByteBuffer> buf = dm.getBytes();
 
       ByteBuffer bytebuf = null;
-      bytebuf = ByteBuffer.wrap(buf);
+//      bytebuf = ByteBuffer.wrap(buf);
+      bytebuf = buf.get(0);
 
       boolean firstWrite = true;
       // tries to write, if it writes some bytes first time, then it writes full
@@ -1433,11 +1427,12 @@ public class ConnectionInfo
         	}
 
         	DataMessage dm = new DataMessage(mesgType, getDataSendSeq(), getDataAckSeq(), 0, value.getNumFPRecvd(), null, -1);
-
-        	byte[] buf = dm.getBytes();
+            //TAG: might need to change this too
+        	ArrayList<ByteBuffer> buf = dm.getBytes();
 
         	ByteBuffer bytebuf = null;
-        	bytebuf = ByteBuffer.wrap(buf);
+//        	bytebuf = ByteBuffer.wrap(buf);
+          bytebuf = buf.get(0);
         	while (bytebuf.hasRemaining())
         		value.getDataChannel().write(bytebuf);
         }
@@ -1491,17 +1486,24 @@ public class ConnectionInfo
 
     if (dataSendSeqNum - DataAck > 0)
     {
-      byte[] buf = getDataFromOutBuffer(DataAck, dataSendSeqNum);
-
+      ArrayList<ByteBuffer> buf = getDataFromOutBuffer(DataAck, dataSendSeqNum);
+      int len = 0;
+      for(int i=0;i<buf.size();i++){
+        len = len + buf.get(i).remaining();
+      }
       int arrayCopyOffset = 0;
-      DataMessage dm = new DataMessage(DataMessage.DATA_MESG, DataAck, getDataAckSeq(), buf.length, 0, buf,
-          arrayCopyOffset);
-      byte[] writebuf = dm.getBytes();
-      ByteBuffer bytebuf = ByteBuffer.allocate(writebuf.length);
-      bytebuf.put(writebuf);
-      bytebuf.flip();
-      while (bytebuf.hasRemaining())
-        Obj.getDataChannel().write(bytebuf);
+      DataMessage dm = new DataMessage(DataMessage.DATA_MESG, DataAck, getDataAckSeq(), len, 0, buf,
+              arrayCopyOffset);
+      ArrayList<ByteBuffer> writebuf = dm.getBytes();
+//      ByteBuffer bytebuf = ByteBuffer.allocate(writebuf.length);
+//      bytebuf.put(writebuf);
+//      bytebuf.flip();
+      //TAG: writing all the bytebuffers sequentially
+      for(int j=0;j<writebuf.size();j++){
+
+        while (writebuf.get(j).hasRemaining())
+          Obj.getDataChannel().write(writebuf.get(j));
+      }
     }
     Obj.setneedToReqeustACK(false);
   }
@@ -1517,11 +1519,24 @@ public class ConnectionInfo
     // desynchronize the outputstream
     emptyTheWriteQueues();
     int DataAckSeq = getDataAckSeq();
-
+    //TAG: Come back and change this once you have ensured that read latency is not there
     DataMessage dm = new DataMessage(DataMessage.ACK, getDataSendSeq(), DataAckSeq, 0, 0, null, -1);
-    byte[] buf = dm.getBytes();
+    ArrayList<ByteBuffer> buf = dm.getBytes();
+    int len = 0;
+    for (int i=0;i< buf.size();i++){
+      len += buf.get(i).remaining();
+    }
+    byte[] writebuff = new byte[len];
+    int ind=0;
+    for(int i=0;i<buf.size();i++){
+      byte[] t = buf.get(i).array();
+      for (int j=0;j<t.length;j++){
+        writebuff[ind] = t[j];
+        ind +=1;
+      }
+    }
     ByteBuffer bytebuf = null;
-    bytebuf = ByteBuffer.wrap(buf);
+    bytebuf = ByteBuffer.wrap(writebuff);
     SocketInfo socketInfo = getActiveSocket(MultipathPolicy.MULTIPATH_POLICY_RANDOM);
     MSocketLogger.getLogger().log(Level.FINE, "sendCloseAckOnly on {0}", socketInfo.getSocketIdentifer());
     while (bytebuf.hasRemaining())
@@ -1607,14 +1622,14 @@ public class ConnectionInfo
 
           getObuffer().setDataBaseSeq(dmheader.ackSeq);
           socketObj.setRecvdBytesOtherSide(dmheader.RecvdBytes);
-
-          if (this.getMultipathWritingPolicy().getClass() == BlackBoxWritingPolicy.class)
-          {
-        	  // length carries the selective ack num
-        	  int selectiveAckSeqNum = dmheader.length;
-        	  ChunkInformation chunkInfo = new ChunkInformation(selectiveAckSeqNum, socketObj.getSocketIdentifer(), dmheader.RecvdBytes);
-        	  ((BlackBoxWritingPolicy)this.getMultipathWritingPolicy()).informAckArrival(chunkInfo);
-          }
+          //TAG: fix this after you have fixed blackbox policy
+//          if (this.getMultipathWritingPolicy().getClass() == BlackBoxWritingPolicy.class)
+//          {
+//        	   length carries the selective ack num
+//        	  int selectiveAckSeqNum = dmheader.length;
+//        	  ChunkInformation chunkInfo = new ChunkInformation(selectiveAckSeqNum, socketObj.getSocketIdentifer(), dmheader.RecvdBytes);
+//        	  ((BlackBoxWritingPolicy)this.getMultipathWritingPolicy()).informAckArrival(chunkInfo);
+//          }
 
           MSocketLogger.getLogger().log(Level.FINE,"DATA_ACK_REP recv, setting data base seq num to {0}, actual dataBaseseqnum {1}, dmheader.RecvdBytes {2}, SocketID {3}, outstanding bytes {4}", new Object[]{dmheader.ackSeq,getObuffer().getDataBaseSeq(),dmheader.RecvdBytes,socketObj.getSocketIdentifer(),socketObj.getOutStandingBytes()});
         }
@@ -1860,17 +1875,17 @@ public class ConnectionInfo
 	          getObuffer().setDataBaseSeq(dmheader.ackSeq);
 	          socketObj.setRecvdBytesOtherSide(dmheader.RecvdBytes);
 
-
-	          if (this.getMultipathWritingPolicy().getClass() == BlackBoxWritingPolicy.class)
-	          {
+              //TAG: FIX THIS AFTER YOU HAVE FIXED THE BLACKBOXWRITING POLICY
+//	          if (this.getMultipathWritingPolicy().getClass() == BlackBoxWritingPolicy.class)
+//	          {
 	        	  // length carries the selective ack num
-	        	  int selecetiveAckNum = dmheader.length;
-	        	  ChunkInformation chunkInfo
-	        	  		= new ChunkInformation(selecetiveAckNum,
-	        	  				socketObj.getSocketIdentifer(), dmheader.RecvdBytes);
-	        	  ((BlackBoxWritingPolicy)
-	        			  this.getMultipathWritingPolicy()).informAckArrival(chunkInfo);
-	          }
+//	        	  int selecetiveAckNum = dmheader.length;
+//	        	  ChunkInformation chunkInfo
+//	        	  		= new ChunkInformation(selecetiveAckNum,
+//	        	  				socketObj.getSocketIdentifer(), dmheader.RecvdBytes);
+//	        	  ((BlackBoxWritingPolicy)
+//	        			  this.getMultipathWritingPolicy()).informAckArrival(chunkInfo);
+//	          }
 
 
 	          MSocketLogger.getLogger().log(Level.FINE,"DATA_ACK_REP received, setting dataBaseSeqNum to {0}, current dataBaseSeqNum is {1}, dmheader.RecvdBytes {2}, SocketId {3}, outstanding bytes {4}", new Object[]{dmheader.ackSeq,getObuffer().getDataBaseSeq(),dmheader.RecvdBytes,socketObj.getSocketIdentifer(),socketObj.getOutStandingBytes()});
@@ -2660,7 +2675,6 @@ public class ConnectionInfo
   /**
    * returns sum of send buffer size among all active flowpaths
    *
-   * @param size
    * @throws SocketException
    */
   public int getSendBufferSize() throws SocketException
@@ -2692,7 +2706,6 @@ public class ConnectionInfo
   /**
    * returns sum of send buffer size among all active flowpaths
    *
-   * @param size
    * @throws SocketException
    */
   public int getReceiveBufferSize() throws SocketException

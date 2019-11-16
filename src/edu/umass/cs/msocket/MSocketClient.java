@@ -18,9 +18,9 @@ public class MSocketClient {
 
     private static DecimalFormat df = new DecimalFormat("0.00##");
 
-    private static final int TOTAL_ROUND = 500;
+    private static final int TOTAL_ROUND = 10;
 
-    private static int numBytes = 512000;
+    private static int numBytes = 1;
 
 
     public static double calc_avg(Long[] input){

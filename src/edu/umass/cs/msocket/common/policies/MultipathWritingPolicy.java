@@ -23,6 +23,7 @@ package edu.umass.cs.msocket.common.policies;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Vector;
 import java.util.logging.Level;
 import edu.umass.cs.msocket.ByteRangeInfo;
@@ -54,7 +55,6 @@ public abstract class MultipathWritingPolicy {
 
 
 	  /**
-	   * @param tempDataSendSeqNum
 	   * @param Obj
 	   * @throws IOException
 	   */
@@ -107,16 +107,31 @@ public abstract class MultipathWritingPolicy {
 	      {
 	        continue;
 	      }
-
-	      byte[] buf = cinfo.getDataFromOutBuffer(currByteR.getStartSeqNum(),
+	      //TAG: Come back to this and change it when done with read latency
+	      ArrayList<ByteBuffer> buf = cinfo.getDataFromOutBuffer(currByteR.getStartSeqNum(),
 	          currByteR.getStartSeqNum() + currByteR.getLength());
-
-	      int arrayCopyOffset = 0;
+			int len = 0;
+			for(int iter=0;iter<buf.size();iter++){
+				len = len + buf.get(iter).remaining();
+			}
+			int arrayCopyOffset = 0;
 	      DataMessage dm = new DataMessage(DataMessage.DATA_MESG, (int) currByteR.getStartSeqNum(), cinfo.getDataAckSeq(),
-	          buf.length, 0, buf, arrayCopyOffset);
-	      byte[] writebuf = dm.getBytes();
-
-	      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
+	          len, 0, buf, arrayCopyOffset);
+	      ArrayList<ByteBuffer> writebuf = dm.getBytes();
+			int len2 = 0;
+			for (int iter2=0;iter2< writebuf.size();i++){
+				len2 += writebuf.get(iter2).remaining();
+			}
+			byte[] writebuff = new byte[len2];
+			int ind=0;
+			for(int iter3=0;iter3<writebuf.size();i++){
+				byte[] t = writebuf.get(iter3).array();
+				for (int j=0;j<t.length;j++){
+					writebuff[ind] = t[j];
+					ind +=1;
+				}
+			}
+	      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuff);
 	      attemptSocketWrite(Obj);
 
 	    }

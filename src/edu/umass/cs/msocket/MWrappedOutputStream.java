@@ -26,13 +26,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import edu.umass.cs.msocket.common.policies.BlackBoxWritingPolicy;
-import edu.umass.cs.msocket.common.policies.FullDuplicationWritingPolicy;
+//import edu.umass.cs.msocket.common.policies.BlackBoxWritingPolicy;
+//import edu.umass.cs.msocket.common.policies.FullDuplicationWritingPolicy;
 import edu.umass.cs.msocket.common.policies.MultipathWritingPolicy;
 import edu.umass.cs.msocket.common.policies.RTTBasedWritingPolicy;
-import edu.umass.cs.msocket.common.policies.RoundRobinWritingPolicy;
-import edu.umass.cs.msocket.common.policies.ReMP;
+//import edu.umass.cs.msocket.common.policies.RoundRobinWritingPolicy;
+//import edu.umass.cs.msocket.common.policies.ReMP;
 import edu.umass.cs.msocket.logger.MSocketLogger;
+import io.netty.buffer.ByteBuf;
+
+import java.util.ArrayList;
 import java.util.logging.Level;
 /**
  * This class implements the Output stream of the MSocket
@@ -49,12 +52,10 @@ public class MWrappedOutputStream extends OutputStream
   public static final int      WRITE_CHUNK_SIZE 	= 1000000;
 
   private ConnectionInfo cinfo            			= null;
-  private MultipathPolicy writePolicy				= MultipathPolicy.MULTIPATH_POLICY_REMP;
+  private MultipathPolicy writePolicy				= MultipathPolicy.MULTIPATH_POLICY_RTX_OPT;
 
   /**
-   * @param out
    * @param cinfo
-   * @param fid
    */
   MWrappedOutputStream(ConnectionInfo cinfo)
   {
@@ -71,26 +72,26 @@ public class MWrappedOutputStream extends OutputStream
 	    	}
 	    	case MULTIPATH_POLICY_FULL_DUP:
 	    	{
-	    		MultipathWritingPolicy multipathPolicy = new FullDuplicationWritingPolicy(cinfo);
-	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
+//	    		MultipathWritingPolicy multipathPolicy = new FullDuplicationWritingPolicy(cinfo);
+//	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
 	    		break;
 	    	}
 	    	case MULTIPATH_POLICY_ROUNDROBIN:
 	    	{
-	    		MultipathWritingPolicy multipathPolicy = new RoundRobinWritingPolicy(cinfo);
-	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
+//	    		MultipathWritingPolicy multipathPolicy = new RoundRobinWritingPolicy(cinfo);
+//	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
 	    		break;
 	    	}
 	    	case MULTIPATH_POLICY_BLACKBOX:
 	    	{
-	    		MultipathWritingPolicy multipathPolicy = new BlackBoxWritingPolicy(cinfo);
-	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
+//	    		MultipathWritingPolicy multipathPolicy = new BlackBoxWritingPolicy(cinfo);
+//	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
 	    		break;
 	    	}
         case MULTIPATH_POLICY_REMP:
         {
-          MultipathWritingPolicy multipathPolicy = new ReMP(cinfo);
-          cinfo.setMultipathWritingPolicy(multipathPolicy);
+//          MultipathWritingPolicy multipathPolicy = new ReMP(cinfo);
+//          cinfo.setMultipathWritingPolicy(multipathPolicy);
           break;
         }
 	    }
@@ -270,7 +271,7 @@ public class MWrappedOutputStream extends OutputStream
             try
             {
               DataMessage dm = new DataMessage(MesgType, cinfo.getDataSendSeq(), cinfo.getDataAckSeq(), 0, 0, null, -1);
-              byte[] writebuf = dm.getBytes();
+              ArrayList<ByteBuffer> writebuf = dm.getBytes();
 
               // exception of wite means that socket is undergoing migration,
               // make it not active, and transfer same data chuk over another
@@ -279,7 +280,10 @@ public class MWrappedOutputStream extends OutputStream
               // received data
 
               MSocketLogger.getLogger().log(Level.FINE, "Using socketID {0} for writing FIN.", Obj.getSocketIdentifer());
-              ByteBuffer writeByBuff = ByteBuffer.wrap(writebuf);
+//              ByteBuffer writeByBuff = ByteBuffer.wrap(writebuf);
+              //TAG:MIGHT NEED TO CHANGE THIS AS WELL
+              ByteBuffer writeByBuff = writebuf.get(0);
+
 
               while (writeByBuff.hasRemaining())
               {

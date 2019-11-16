@@ -23,6 +23,7 @@
 package edu.umass.cs.msocket;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Level;
 import edu.umass.cs.msocket.logger.MSocketLogger;
@@ -55,29 +56,9 @@ public class DataMessage
   final int                    ackSeq;
   final int                    length;
   final int                    Type;
-  final long                   RecvdBytes;                                                             // num
-                                                                                                       // of
-                                                                                                       // bytes
-                                                                                                       // recvd
-                                                                                                       // on
-                                                                                                       // this
-                                                                                                       // socket,
-                                                                                                       // on
-                                                                                                       // which
-                                                                                                       // this
-                                                                                                       // ACK
-                                                                                                       // will
-                                                                                                       // be
-                                                                                                       // sent,
-                                                                                                       // required
-                                                                                                       // by
-                                                                                                       // sending
-                                                                                                       // side
-                                                                                                       // for
-                                                                                                       // socket
-                                                                                                       // performance
-
-  final byte[]                 msg;
+  //num of bytes receieved on the socket on which ACK will be sent. Required by the sending side for Socket performance
+  final long                   RecvdBytes;
+  final ArrayList<ByteBuffer>  msg;
 
   // stores the beginning position of data copy in the given buffer.
   private final int arrayCopyOffset;
@@ -88,15 +69,22 @@ public class DataMessage
    * We need to allow length>0 and msg==null in the case of a header-only
    * DataMessage.
    */
-  public DataMessage(int Type, int s, int a, int l, long RecvdBytes, byte[] b, int offset)
+  public DataMessage(int Type, int s, int a, int l, long RecvdBytes, ArrayList<ByteBuffer> b, int offset)
   {
     this.Type = Type;
     sendSeq = s;
     ackSeq = a;
-    if (b == null || l <= b.length)
+    int len = 0;
+    if(b != null){
+      for(int i=0;i<b.size();i++){
+        len = len + b.get(i).remaining();
+      }
+    }
+
+    if (b == null || l <= len)
       length = l;
     else
-      length = b.length;
+      length = len;
     this.RecvdBytes = RecvdBytes;
     arrayCopyOffset = offset;
     msg = b;
@@ -112,25 +100,23 @@ public class DataMessage
     return sizeofHeader() + length;
   }
 
-  public byte[] getBytes()
+  public ArrayList<ByteBuffer> getBytes()
   {
-    ByteBuffer buf = ByteBuffer.allocate(DataMessage.HEADER_SIZE + (msg != null ? length : 0));
-    buf.putInt(Type);
-    buf.putInt(sendSeq);
-    buf.putInt(ackSeq);
-    buf.putInt(length);
-    buf.putLong(RecvdBytes);
-    if (msg != null)
-      {
-    	buf.put(msg, arrayCopyOffset, length);
-    	if(length>0)
-    	{
-
-        MSocketLogger.getLogger().log(Level.FINE,"DataMessage msg[0]: {1}", msg[0]);
-    	}
+    ArrayList<ByteBuffer> ret_arr = new ArrayList<ByteBuffer>();
+    ByteBuffer header = ByteBuffer.allocate(DataMessage.HEADER_SIZE);
+    header.putInt(Type);
+    header.putInt(sendSeq);
+    header.putInt(ackSeq);
+    header.putInt(length);
+    header.putLong(RecvdBytes);
+    header.flip();
+    ret_arr.add(header);
+    if(msg != null){
+      for(int i=0;i<msg.size();i++){
+        ret_arr.add(msg.get(i));
       }
-    buf.flip();
-    return buf.array();
+    }
+    return ret_arr;
   }
 
   /*
@@ -138,15 +124,15 @@ public class DataMessage
    * DataMessage object, i.e., there is no excess bytes beyond the header and
    * the message body. If that is not the case, it will return null.
    */
-  public static DataMessage getDataMessage(byte[] b)
-  {
-    if (b == null || b.length < DataMessage.HEADER_SIZE)
-      return null;
-    ByteBuffer buf = ByteBuffer.wrap(b);
-    DataMessage dm = new DataMessage(buf.getInt(), buf.getInt(), buf.getInt(), buf.getInt(), buf.getLong(),
-        Arrays.copyOfRange(b, DataMessage.HEADER_SIZE, b.length), 0);
-    return dm;
-  }
+//  public static DataMessage getDataMessage(byte[] b)
+//  {
+//    if (b == null || b.length < DataMessage.HEADER_SIZE)
+//      return null;
+//    ByteBuffer buf = ByteBuffer.wrap(b);
+//    DataMessage dm = new DataMessage(buf.getInt(), buf.getInt(), buf.getInt(), buf.getInt(), buf.getLong(),
+//        Arrays.copyOfRange(b, DataMessage.HEADER_SIZE, b.length), 0);
+//    return dm;
+//  }
 
   public static DataMessage getDataMessageHeader(byte[] b)
   {
@@ -159,18 +145,28 @@ public class DataMessage
   public String toString()
   {
     String s = "";
-    s += "Type: "+ Type + ",sendSeq: " + sendSeq + ",ackSeq: " + ackSeq + ",length: " + length + ",msg: " + (msg != null ? new String(msg) : "");
+    s += "Type: "+ Type + ",sendSeq: " + sendSeq + ",ackSeq: " + ackSeq + ",length: " + length;
     return s;
   }
 
   public static void main(String[] args)
   {
     byte[] b = "Testing the waters to get a feel".getBytes();
-    DataMessage dm = new DataMessage(0, 23, 19, b.length, 1, b, 0);
-    byte[] enc = dm.getBytes();
+    ByteBuffer bb = ByteBuffer.wrap(b);
+    ArrayList<ByteBuffer> bb_al = new ArrayList<ByteBuffer>();
+    bb_al.add(bb);
+    int len = 0;
+    for(int i=0;i<bb_al.size();i++){
+      len = len + bb_al.get(i).remaining();
+    }
+    DataMessage dm = new DataMessage(0, 23, 19, len, 1, bb_al, 0);
+    ArrayList<ByteBuffer> enc = dm.getBytes();
+    for(int i=0;i<enc.size();i++){
+      byte[] temp = new byte[enc.get(i).remaining()];
+      enc.get(i).get(temp);
+      System.out.println(new String(temp));
+    }
 
-    DataMessage dec = DataMessage.getDataMessage(enc);
-    enc[11] = 98;
-    // MSocketLogger.getLogger().fine(dec.toString());
+
   }
 }
