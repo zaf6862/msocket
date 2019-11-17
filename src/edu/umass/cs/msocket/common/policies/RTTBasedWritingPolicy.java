@@ -121,19 +121,19 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
           ArrayList<ByteBuffer> writebuf = dm.getBytes();
 
           //TAG: Come back and change this once you have ensured that read latency is not there
-          int len = 0;
-          for (int i=0;i< writebuf.size();i++){
-            len += writebuf.get(i).remaining();
-          }
-          byte[] writebuff = new byte[len];
-          int ind=0;
-          for(int i=0;i<writebuf.size();i++){
-              byte[] t = writebuf.get(i).array();
-              for (int j=0;j<t.length;j++){
-                writebuff[ind] = t[j];
-                ind +=1;
-              }
-          }
+//          int len = 0;
+//          for (int i=0;i< writebuf.size();i++){
+//            len += writebuf.get(i).remaining();
+//          }
+//          byte[] writebuff = new byte[len];
+//          int ind=0;
+//          for(int i=0;i<writebuf.size();i++){
+//              byte[] t = writebuf.get(i).array();
+//              for (int j=0;j<t.length;j++){
+//                writebuff[ind] = t[j];
+//                ind +=1;
+//              }
+//          }
 
           // exception of write means that socket is undergoing migration,
           // make it not active, and transfer same data chunk over another
@@ -150,7 +150,7 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
 	        }
 	        else
 	        {
-	          Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuff);
+	          Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
 	          Obj.byteInfoVectorOperations(SocketInfo.QUEUE_PUT, tempDataSendSeqNum, tobesent);
 	        }
 

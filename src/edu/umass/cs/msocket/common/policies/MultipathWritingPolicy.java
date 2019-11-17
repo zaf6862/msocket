@@ -118,20 +118,20 @@ public abstract class MultipathWritingPolicy {
 	      DataMessage dm = new DataMessage(DataMessage.DATA_MESG, (int) currByteR.getStartSeqNum(), cinfo.getDataAckSeq(),
 	          len, 0, buf, arrayCopyOffset);
 	      ArrayList<ByteBuffer> writebuf = dm.getBytes();
-			int len2 = 0;
-			for (int iter2=0;iter2< writebuf.size();i++){
-				len2 += writebuf.get(iter2).remaining();
-			}
-			byte[] writebuff = new byte[len2];
-			int ind=0;
-			for(int iter3=0;iter3<writebuf.size();i++){
-				byte[] t = writebuf.get(iter3).array();
-				for (int j=0;j<t.length;j++){
-					writebuff[ind] = t[j];
-					ind +=1;
-				}
-			}
-	      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuff);
+//			int len2 = 0;
+//			for (int iter2=0;iter2< writebuf.size();i++){
+//				len2 += writebuf.get(iter2).remaining();
+//			}
+//			byte[] writebuff = new byte[len2];
+//			int ind=0;
+//			for(int iter3=0;iter3<writebuf.size();i++){
+//				byte[] t = writebuf.get(iter3).array();
+//				for (int j=0;j<t.length;j++){
+//					writebuff[ind] = t[j];
+//					ind +=1;
+//				}
+//			}
+	      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
 	      attemptSocketWrite(Obj);
 
 	    }

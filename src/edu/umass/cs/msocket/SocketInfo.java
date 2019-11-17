@@ -23,7 +23,9 @@
 package edu.umass.cs.msocket;
 
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Vector;
@@ -45,7 +47,7 @@ public class SocketInfo
   public static final int       QUEUE_PUT                      = 2;
   public static final int       QUEUE_REMOVE                   = 3;
   public static final int       QUEUE_SIZE                     = 4;
-
+  public static final int       QUEUE_GET_OPT                  = 5;
   public static final int       VARIABLE_UPDATE                = 1;
   public static final int       VARIABLE_SET                   = 2;
   public static final int       VARIABLE_GET                   = 3;
@@ -86,7 +88,7 @@ public class SocketInfo
   private boolean               stateChangeLock                = false;
 
   private long                  lastKeepAlive                  = 0;
-  private Queue<byte[]>         sendingQueue                   = null;
+  private Queue<ArrayList<ByteBuffer>>         sendingQueue    = null;
   /*
    * due to non-blocking writes current chunk may not be written completely in
    * one go. so this variable maintain the offset till which it's been written.
@@ -135,19 +137,38 @@ public class SocketInfo
     chunkReadOffsetSeqNum = 0; // may not be related to sending seq num
     chunkEndSeqNum = 0;        // may not be related to sending seq num
     active = true;
-    sendingQueue = new LinkedList<byte[]>();
+    sendingQueue = new LinkedList<ArrayList<ByteBuffer>>();
     byteInfoVector = new Vector<ByteRangeInfo>();
   }
 
-  public Object queueOperations(int operType, byte[] putObject)
+  public Object queueOperations(int operType, ArrayList<ByteBuffer> putObject)
   {
     synchronized (queueMonitor)
     {
       switch (operType)
       {
-        case QUEUE_GET :
+        case QUEUE_GET_OPT :
         {
           return sendingQueue.peek();
+        }
+        case QUEUE_GET :
+        {
+          ArrayList<ByteBuffer>  bb  = sendingQueue.peek();
+          int len=0;
+          for(int i=0;i<bb.size();i++){
+            len += bb.get(i).remaining();
+          }
+          int ind = 0;
+          byte[] b= new byte[len];
+          for(int i=0;i<bb.size();i++){
+            byte[] t = bb.get(i).array();
+            for(int j=0;j<t.length;j++){
+              b[ind] = t[j];
+              ind+=1;
+            }
+          }
+          System.out.println("explicitly copying the byte buffer back to byte array in socketinfo.");
+          return b;
         }
         case QUEUE_PUT :
         {

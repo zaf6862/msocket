@@ -211,19 +211,19 @@ public class BackgroundWritingThread implements Runnable
               length, 0, retransmitData, arrayCopyOffset);
           ArrayList<ByteBuffer> writebuf = dm.getBytes();
           //TAG: Come back and change this once you have ensured that read latency is not there
-          int len = 0;
-          for (int i=0;i< writebuf.size();i++){
-            len += writebuf.get(i).remaining();
-          }
-          byte[] writebuff = new byte[len];
-          int ind=0;
-          for(int i=0;i<writebuf.size();i++){
-            byte[] t = writebuf.get(i).array();
-            for (int j=0;j<t.length;j++){
-              writebuff[ind] = t[j];
-              ind +=1;
-            }
-          }
+//          int len = 0;
+//          for (int i=0;i< writebuf.size();i++){
+//            len += writebuf.get(i).remaining();
+//          }
+//          byte[] writebuff = new byte[len];
+//          int ind=0;
+//          for(int i=0;i<writebuf.size();i++){
+//            byte[] t = writebuf.get(i).array();
+//            for (int j=0;j<t.length;j++){
+//              writebuff[ind] = t[j];
+//              ind +=1;
+//            }
+//          }
           // exception of write means that socket is undergoing migration,
           // make it not active, and transfer same data chuk over another
           // available socket.
@@ -238,7 +238,7 @@ public class BackgroundWritingThread implements Runnable
           }
           else
           {
-            Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuff);
+            Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
           }
 
           cinfo.attemptSocketWrite(Obj);
@@ -332,20 +332,20 @@ public class BackgroundWritingThread implements Runnable
               len, 0, buf, arrayCopyOffset);
       ArrayList<ByteBuffer> writebuf = dm.getBytes();
       //TAG: Come back and change this once you have ensured that read latency is not there
-      int len2 = 0;
-      for (int iter2=0;iter2< writebuf.size();i++){
-        len2 += writebuf.get(iter2).remaining();
-      }
-      byte[] writebuff = new byte[len2];
-      int ind=0;
-      for(int iter3=0;iter3<writebuf.size();i++){
-        byte[] t = writebuf.get(iter3).array();
-        for (int j=0;j<t.length;j++){
-          writebuff[ind] = t[j];
-          ind +=1;
-        }
-      }
-      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuff);
+//      int len2 = 0;
+//      for (int iter2=0;iter2< writebuf.size();i++){
+//        len2 += writebuf.get(iter2).remaining();
+//      }
+//      byte[] writebuff = new byte[len2];
+//      int ind=0;
+//      for(int iter3=0;iter3<writebuf.size();i++){
+//        byte[] t = writebuf.get(iter3).array();
+//        for (int j=0;j<t.length;j++){
+//          writebuff[ind] = t[j];
+//          ind +=1;
+//        }
+//      }
+      Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
       cinfo.attemptSocketWrite(Obj);
 
     }
