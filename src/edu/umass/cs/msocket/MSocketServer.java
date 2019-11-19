@@ -75,7 +75,7 @@ public class MSocketServer {
                 // client sends 0 to close the socket
                 long run_number = 0;
                 while(numRead >= 0) {
-                    System.out.println("Round Numebr : " + run_number);
+                    System.out.println("Round Number : " + run_number);
                     long start = System.nanoTime();
 
                     // get number of bytes to send

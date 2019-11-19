@@ -2035,6 +2035,48 @@ public class ConnectionInfo
       MSocketLogger.getLogger().log(Level.FINE, "Using socketID {0}, Remote IP {1}, time taken for writing was {2}", new Object[]{Obj.getSocketIdentifer(),Obj.getSocket().getInetAddress(),(endTime - startTime)});
   }
 
+
+  public void attemptSocketWriteOptimized(SocketInfo Obj) throws IOException
+  {
+    Obj.getDataChannel().configureBlocking(false);
+    long startTime = System.currentTimeMillis();
+    @SuppressWarnings("unchecked")
+    ArrayList<ByteBuffer> writebuf = (ArrayList<ByteBuffer>) Obj.queueOperations(SocketInfo.QUEUE_GET_OPT, null);
+    //this counts how many bytes are left in the list of Bytebuffers
+    int len = 0;
+    for(int i=0;i<writebuf.size();i++){
+      len += writebuf.get(i).remaining();
+    }
+    int gotWritten = 0;
+    for(int i=0;i<writebuf.size();i++){
+      while(writebuf.get(i).hasRemaining()){
+        gotWritten += Obj.getDataChannel().write(writebuf.get(i));
+      }
+    }
+
+
+    //completely written. Time to remove from the head of queue and reset it
+    if (Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET) == len)
+    {
+      MSocketLogger.getLogger().log(Level.FINE, "Writebuffer length {0}", len);
+      Obj.currentChunkWriteOffsetOper(0, SocketInfo.VARIABLE_SET);
+      Obj.queueOperations(SocketInfo.QUEUE_REMOVE, null);
+    }
+    long endTime = System.currentTimeMillis();
+
+
+    TemporaryTasksES.startTaskWithES(this, TemporaryTasksES.EMPTY_QUEUE);
+
+    if (gotWritten > 0){
+      MSocketLogger.getLogger().log(Level.FINE, "Using socketID {0}, Remote IP {1}, time taken for writing was {2}", new Object[]{Obj.getSocketIdentifer(),Obj.getSocket().getInetAddress(),(endTime - startTime)});
+    }
+
+
+  }
+
+
+
+
   /**
    * Migration type denotes Whether the IP and port is of server or client
    * Mobility Manager calls this, users need not call this,
@@ -2991,7 +3033,7 @@ public class ConnectionInfo
           {
         	try
         	{
-        		attemptSocketWrite(Obj);
+        		attemptSocketWriteOptimized(Obj);
         	} catch(IOException sx)
         	{
         		sx.printStackTrace();
@@ -3028,7 +3070,7 @@ public class ConnectionInfo
           {
         	try
         	{
-        		attemptSocketWrite(Obj);
+        		attemptSocketWriteOptimized(Obj);
         	} catch(IOException ex)
         	{
         		ex.printStackTrace();

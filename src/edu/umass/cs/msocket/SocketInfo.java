@@ -156,16 +156,26 @@ public class SocketInfo
           ArrayList<ByteBuffer>  bb  = sendingQueue.peek();
           int len=0;
           for(int i=0;i<bb.size();i++){
-            len += bb.get(i).remaining();
+            if(bb.get(i).hasRemaining()){
+              len += bb.get(i).remaining();
+            }
+
           }
           int ind = 0;
           byte[] b= new byte[len];
+          System.out.println("length " + len);
           for(int i=0;i<bb.size();i++){
-            byte[] t = bb.get(i).array();
-            for(int j=0;j<t.length;j++){
-              b[ind] = t[j];
-              ind+=1;
+            if(bb.get(i).hasRemaining()){
+              byte[] t = new byte[bb.get(i).remaining()];
+              bb.get(i).get(t);
+              for(int j=0;j<t.length;j++){
+                byte tt = t[j];
+                b[ind] = tt;
+
+                ind+=1;
+              }
             }
+
           }
           System.out.println("explicitly copying the byte buffer back to byte array in socketinfo.");
           return b;

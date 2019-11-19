@@ -144,7 +144,7 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
 
 	        if ((Integer) Obj.queueOperations(SocketInfo.QUEUE_SIZE, null) > 0)
 	        {
-	          cinfo.attemptSocketWrite(Obj);
+	          cinfo.attemptSocketWriteOptimized(Obj);
 	          Obj.releaseLock();
 	          continue;
 	        }
@@ -154,7 +154,7 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
 	          Obj.byteInfoVectorOperations(SocketInfo.QUEUE_PUT, tempDataSendSeqNum, tobesent);
 	        }
 
-	        cinfo.attemptSocketWrite(Obj);
+	        cinfo.attemptSocketWriteOptimized(Obj);
 	        if (cinfo.getServerOrClient() == MSocketConstants.CLIENT)
 	        {
 
@@ -280,7 +280,7 @@ protected SocketInfo getNextSocketToWrite() throws IOException {
         else
         {
           value.acquireLock();
-          cinfo.attemptSocketWrite(value);
+          cinfo.attemptSocketWriteOptimized(value);
           value.releaseLock();
         }
       }
@@ -306,7 +306,7 @@ protected SocketInfo getNextSocketToWrite() throws IOException {
           else
           {
             value.acquireLock();
-            cinfo.attemptSocketWrite(value);
+            cinfo.attemptSocketWriteOptimized(value);
             value.releaseLock();
           }
         }

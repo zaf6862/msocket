@@ -18,9 +18,9 @@ public class MSocketClient {
 
     private static DecimalFormat df = new DecimalFormat("0.00##");
 
-    private static final int TOTAL_ROUND = 1;
+    private static final int TOTAL_ROUND = 10;
 
-    private static int numBytes = 1;
+    private static int numBytes = 10;
 
 
     public static double calc_avg(Long[] input){
@@ -108,7 +108,6 @@ public class MSocketClient {
             }
             Long[]  transferTime  = new Long[numRound];
             while (rd < numRound) {
-                Thread.sleep(5000);
                 System.out.println("[Round number:] " + rd);
                 int numSent = numOfBytes;
                 System.out.println("[Client:] To read " + numSent + " bytes data from input stream...");

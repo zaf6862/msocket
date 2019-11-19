@@ -232,7 +232,7 @@ public class BackgroundWritingThread implements Runnable
 
           if ((Integer) Obj.queueOperations(SocketInfo.QUEUE_SIZE, null) > 0)
           {
-            cinfo.attemptSocketWrite(Obj);
+            cinfo.attemptSocketWriteOptimized(Obj);
             Obj.releaseLock();
             return false;
           }
@@ -241,7 +241,7 @@ public class BackgroundWritingThread implements Runnable
             Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
           }
 
-          cinfo.attemptSocketWrite(Obj);
+          cinfo.attemptSocketWriteOptimized(Obj);
 
           Obj.updateSentBytes(length);
           Obj.releaseLock();
@@ -302,7 +302,7 @@ public class BackgroundWritingThread implements Runnable
         // setting the point to start from next time
         Obj.setHandleMigSeqNum(currByteR.getStartSeqNum());
         //FIXME: need to acquire lock Obj.acquire lock
-        cinfo.attemptSocketWrite(Obj);
+        cinfo.attemptSocketWriteOptimized(Obj);
         return;
       }
 
@@ -346,7 +346,7 @@ public class BackgroundWritingThread implements Runnable
 //        }
 //      }
       Obj.queueOperations(SocketInfo.QUEUE_PUT, writebuf);
-      cinfo.attemptSocketWrite(Obj);
+      cinfo.attemptSocketWriteOptimized(Obj);
 
     }
 
