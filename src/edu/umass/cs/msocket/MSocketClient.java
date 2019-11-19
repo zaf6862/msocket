@@ -18,9 +18,9 @@ public class MSocketClient {
 
     private static DecimalFormat df = new DecimalFormat("0.00##");
 
-    private static final int TOTAL_ROUND = 10;
+    private static final int TOTAL_ROUND = 1;
 
-    private static int numBytes = 10;
+    private static int numBytes = 1;
 
 
     public static double calc_avg(Long[] input){
@@ -126,6 +126,7 @@ public class MSocketClient {
                 long write_time_start = System.nanoTime();
                 os.write(bytes);
                 long write_time_elapsed = System.nanoTime() - write_time_start;
+                System.out.println("[Write:] " + write_time_elapsed + " ns");
                 long read_time_start = System.nanoTime();
                 do {
                     numRead = is.read(b);
@@ -135,7 +136,7 @@ public class MSocketClient {
                 } while (totalRead < numSent);
                 long read_time_elapsed = System.nanoTime() - read_time_start;
                 long app_level_elapsed = System.nanoTime() - app_level_start;
-                System.out.println("[Write:] " + write_time_elapsed + " ns");
+
                 System.out.println("[Read:] " + read_time_elapsed/ 1000000  + " ms");
                 System.out.println("[TransferTime:] " + app_level_elapsed + " nano seconds");
 
