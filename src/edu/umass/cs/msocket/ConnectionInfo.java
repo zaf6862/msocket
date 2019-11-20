@@ -2087,9 +2087,6 @@ public class ConnectionInfo
     }
     int gotWritten = 0;
     for(int i=0;i<writebuf.size();i++){
-//      while(writebuf.get(i).hasRemaining()){
-//        gotWritten += Obj.getDataChannel().write(writebuf.get(i));
-//      }
       if(writebuf.get(i).hasRemaining()){
         Obj.getDataChannel().write(writebuf.get(i));
         break;

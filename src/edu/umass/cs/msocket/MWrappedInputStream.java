@@ -112,7 +112,10 @@ public class MWrappedInputStream extends InputStream
 			      // no need to block on selector
 	    		 synchronized(cinfo.getInputStreamSelectorMonitor())
 	    		 {
+             long t = System.currentTimeMillis();
 	    			 cinfo.blockOnInputStreamSelector();
+             long elapsed = System.currentTimeMillis() - t;
+             MSocketLogger.getLogger().log(Level.INFO,"Time blocked on the blockOnInputStreamSelector: {0}", elapsed);
 	    		 }
 	    	}
 	    }
