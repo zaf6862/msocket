@@ -3,6 +3,7 @@ import edu.umass.cs.msocket.MSocket;
 import edu.umass.cs.msocket.mobility.MobilityManagerClient;
 
 import java.io.InputStream;
+import java.net.SocketException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -16,7 +17,7 @@ public class MSocketClient implements Runnable {
     private static final String LOCALHOST  = "127.0.0.1";
     private static DecimalFormat df = new DecimalFormat("0.00##");
     private static final int TOTAL_ROUND = 100;
-    private static int numBytes = 64000000;
+    private static int numBytes = 1000000;
 
     public static Long calc_median(Long[] input){
       Arrays.sort(input);
@@ -48,17 +49,20 @@ public class MSocketClient implements Runnable {
 
       try{
         MSocket ms = new MSocket(InetAddress.getByName(serverIPOrName), serverPort);
-        try{
-          ms.setTcpNoDelay();
-        }catch(SocketException e){
-          e.printStackTrace();
-        }
+
         OutputStream os = ms.getOutputStream();
         InputStream is = ms.getInputStream();
         try {
           Thread.sleep(2000); // wait for 2 seconds for all connections
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+
+        try{
+          ms.setTcpNoDelay(true);
+          // System.out.println("Client is setting the tcp no delay option.");
+        }catch(SocketException e){
+          e.printStackTrace();
         }
 
         int current_round = 0;
@@ -73,14 +77,17 @@ public class MSocketClient implements Runnable {
             int totalRead = 0;
             long start = System.currentTimeMillis();
             os.write(bytes);
+            // System.out.println("CLIENT ----> Time taken to write is " + (System.currentTimeMillis() - start));
+            long t = System.currentTimeMillis();
             do {
                 numRead = is.read(b);
                 if (numRead >= 0)
                     totalRead += numRead;
 
             } while (totalRead < numSent);
-
+            // System.out.println("CLIENT ----> Time taken to read is " + (System.currentTimeMillis() - t));
             long elapsed = System.currentTimeMillis() - start;
+            // System.out.println("CLIENT ----> Total Transfer time is " + elapsed);
             transferTime[current_round] = elapsed;
             current_round++;
         }

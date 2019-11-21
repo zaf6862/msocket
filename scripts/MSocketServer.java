@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
 import java.util.Scanner;
+import java.net.SocketException;
 
 public class MSocketServer implements Runnable{
 
@@ -42,7 +43,8 @@ public class MSocketServer implements Runnable{
         {
             this.msocket = msocket;
             try{
-                this.msocket.setTcpNoDelay();
+                msocket.setTcpNoDelay(true);
+                // System.out.println("Server is setting the tcp no delay option.");
             }catch(SocketException e){
                 e.printStackTrace();
             }
@@ -69,8 +71,9 @@ public class MSocketServer implements Runnable{
 
                     byte[] numByteArr = new byte[8];
                     try {
-
+                        long t = System.currentTimeMillis();
                         is.read(numByteArr);
+                        // System.out.println("SERVER ----> Time taken to read is " + (System.currentTimeMillis() - t));
                         ByteBuffer wrapped = ByteBuffer.wrap(numByteArr);
                         numRead = wrapped.getInt();
                     } catch (IOException e) {
@@ -81,17 +84,18 @@ public class MSocketServer implements Runnable{
 
                         byte[] b = new byte[numRead];
                         new Random().nextBytes(b);
-
+                        long t2 = System.currentTimeMillis();
                         try {
                             os.write(b);
-                            os.flush();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                        // System.out.println("SERVER ----> Time taken to write is " + (System.currentTimeMillis() - t2));
                         // reset
                         b = null;
                         numRead = 0;
                         long elapsed = System.currentTimeMillis() - start;
+                        // System.out.println("SERVER ----> Total transfer time is " + elapsed);
                         LocalDateTime now = LocalDateTime.now();
 
                     }

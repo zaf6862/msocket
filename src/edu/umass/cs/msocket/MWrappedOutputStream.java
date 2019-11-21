@@ -49,7 +49,7 @@ public class MWrappedOutputStream extends OutputStream
   /**
    * Size of a write block
    */
-  public static final int      WRITE_CHUNK_SIZE 	= 1000;
+  public static final int      WRITE_CHUNK_SIZE 	= 1000000;
 
   private ConnectionInfo cinfo            			= null;
   private MultipathPolicy writePolicy				= MultipathPolicy.MULTIPATH_POLICY_RTX_OPT;
