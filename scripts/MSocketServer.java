@@ -41,6 +41,11 @@ public class MSocketServer implements Runnable{
         public RequestHandlingThread(MSocket msocket)
         {
             this.msocket = msocket;
+            try{
+                this.msocket.setTcpNoDelay();
+            }catch(SocketException e){
+                e.printStackTrace();
+            }
         }
 
         public void run()

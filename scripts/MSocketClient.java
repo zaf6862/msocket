@@ -48,6 +48,11 @@ public class MSocketClient implements Runnable {
 
       try{
         MSocket ms = new MSocket(InetAddress.getByName(serverIPOrName), serverPort);
+        try{
+          ms.setTcpNoDelay();
+        }catch(SocketException e){
+          e.printStackTrace();
+        }
         OutputStream os = ms.getOutputStream();
         InputStream is = ms.getInputStream();
         try {
