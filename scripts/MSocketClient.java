@@ -95,7 +95,7 @@ public class MSocketClient implements Runnable {
         os.write(-1);
         os.flush();
 
-        median_time = calc_avg(transferTime);
+        median_time = calc_median(transferTime);
         System.out.println(median_time);
         ms.close();
 
