@@ -1998,18 +1998,7 @@ public class ConnectionInfo
       Obj.currentChunkWriteOffsetOper(gotWritten, SocketInfo.VARIABLE_UPDATE);
     }
 
-    if (Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET) == writebuf.length) // completely
-                                                                                         // written,
-                                                                                         // time
-                                                                                         // to
-                                                                                         // remove
-                                                                                         // from
-                                                                                         // head
-                                                                                         // of
-                                                                                         // queue
-                                                                                         // and
-                                                                                         // reset
-                                                                                         // it
+    if (Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET) == writebuf.length)
     {
 
       MSocketLogger.getLogger().log(Level.FINE, "Writebuffer length {0}", writebuf.length);
@@ -2017,16 +2006,6 @@ public class ConnectionInfo
       Obj.queueOperations(SocketInfo.QUEUE_REMOVE, null);
     }
     long endTime = System.currentTimeMillis();
-
-    // wakeup the empty queue thread,
-    // it might have gone to sleep unlike the developer
-    /*if( (Integer)Obj.queueOperations(SocketInfo.QUEUE_SIZE, null) > 0 )
-    {
-    	synchronized(this.getEmptyQueueThreadMonitor())
-    	{
-    		this.getEmptyQueueThreadMonitor().notify();
-    	}
-    }*/
 
     TemporaryTasksES.startTaskWithES(this, TemporaryTasksES.EMPTY_QUEUE);
 
@@ -2036,43 +2015,7 @@ public class ConnectionInfo
   }
 
 
-//  public void attemptSocketWriteOptimized(SocketInfo Obj) throws IOException
-//  {
-//    Obj.getDataChannel().configureBlocking(false);
-//    long startTime = System.currentTimeMillis();
-//    @SuppressWarnings("unchecked")
-//    ArrayList<ByteBuffer> writebuf = (ArrayList<ByteBuffer>) Obj.queueOperations(SocketInfo.QUEUE_GET_OPT, null);
-//    //this counts how many bytes are left in the list of Bytebuffers
-//    int len = 0;
-//    for(int i=0;i<writebuf.size();i++){
-//      len += writebuf.get(i).remaining();
-//    }
-//    int gotWritten = 0;
-//    for(int i=0;i<writebuf.size();i++){
-//      while(writebuf.get(i).hasRemaining()){
-//        gotWritten += Obj.getDataChannel().write(writebuf.get(i));
-//      }
-//    }
-//
-//
-//    //completely written. Time to remove from the head of queue and reset it
-//    if (Obj.currentChunkWriteOffsetOper(-1, SocketInfo.VARIABLE_GET) == len)
-//    {
-//      MSocketLogger.getLogger().log(Level.FINE, "Writebuffer length {0}", len);
-//      Obj.currentChunkWriteOffsetOper(0, SocketInfo.VARIABLE_SET);
-//      Obj.queueOperations(SocketInfo.QUEUE_REMOVE, null);
-//    }
-//    long endTime = System.currentTimeMillis();
-//
-//
-//    TemporaryTasksES.startTaskWithES(this, TemporaryTasksES.EMPTY_QUEUE);
-//
-//    if (gotWritten > 0){
-//      MSocketLogger.getLogger().log(Level.FINE, "Using socketID {0}, Remote IP {1}, time taken for writing was {2}", new Object[]{Obj.getSocketIdentifer(),Obj.getSocket().getInetAddress(),(endTime - startTime)});
-//    }
-//
-//
-//  }
+
 
   public void attemptSocketWriteOptimized(SocketInfo Obj) throws IOException
   {
@@ -2083,16 +2026,28 @@ public class ConnectionInfo
     //this counts how many bytes are left in the list of Bytebuffers
     int len = 0;
     for(int i=0;i<writebuf.size();i++){
-      len += writebuf.get(i).remaining();
-    }
-    int gotWritten = 0;
-    for(int i=0;i<writebuf.size();i++){
-      if(writebuf.get(i).hasRemaining()){
-        Obj.getDataChannel().write(writebuf.get(i));
-        break;
-      }
+        if(writebuf.get(i).hasRemaining()){
+            len += writebuf.get(i).remaining();
+        }
+
     }
 
+    //Writing as much as possible in one go.
+    int ind = 0;
+    int gotWritten=0;
+    while(true){
+        gotWritten += Obj.getDataChannel().write(writebuf.get(ind));
+        if(writebuf.get(ind).remaining() == 0){
+          if(ind == writebuf.size() -1 ){
+            break;
+          }else{
+            ind += 1;
+          }
+        }else{
+          break;
+        }
+
+    }
 
     //completely written. Time to remove from the head of queue and reset it
     if (len == 0)
@@ -2110,9 +2065,6 @@ public class ConnectionInfo
 
 
   }
-
-
-
 
   /**
    * Migration type denotes Whether the IP and port is of server or client
