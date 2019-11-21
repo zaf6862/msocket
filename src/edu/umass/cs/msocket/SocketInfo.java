@@ -88,7 +88,7 @@ public class SocketInfo
   private boolean               stateChangeLock                = false;
 
   private long                  lastKeepAlive                  = 0;
-  private Queue<ArrayList<ByteBuffer>>         sendingQueue    = null;
+  private ArrayList<ByteBuffer>         sendingQueue    = null;
   /*
    * due to non-blocking writes current chunk may not be written completely in
    * one go. so this variable maintain the offset till which it's been written.
@@ -137,7 +137,7 @@ public class SocketInfo
     chunkReadOffsetSeqNum = 0; // may not be related to sending seq num
     chunkEndSeqNum = 0;        // may not be related to sending seq num
     active = true;
-    sendingQueue = new LinkedList<ArrayList<ByteBuffer>>();
+    sendingQueue = new ArrayList<ByteBuffer>();
     byteInfoVector = new Vector<ByteRangeInfo>();
   }
 
@@ -149,45 +149,29 @@ public class SocketInfo
       {
         case QUEUE_GET_OPT :
         {
-          return sendingQueue.peek();
+          return sendingQueue;
         }
-        case QUEUE_GET :
-        {
-          ArrayList<ByteBuffer>  bb  = sendingQueue.peek();
-          int len=0;
-          for(int i=0;i<bb.size();i++){
-            if(bb.get(i).hasRemaining()){
-              len += bb.get(i).remaining();
-            }
 
-          }
-          int ind = 0;
-          byte[] b= new byte[len];
-          System.out.println("length " + len);
-          for(int i=0;i<bb.size();i++){
-            if(bb.get(i).hasRemaining()){
-              byte[] t = new byte[bb.get(i).remaining()];
-              bb.get(i).get(t);
-              for(int j=0;j<t.length;j++){
-                byte tt = t[j];
-                b[ind] = tt;
-
-                ind+=1;
-              }
-            }
-
-          }
-          System.out.println("explicitly copying the byte buffer back to byte array in socketinfo.");
-          return b;
-        }
         case QUEUE_PUT :
         {
-          sendingQueue.add(putObject);
+          for(int i=0;i<putObject.size();i++){
+            sendingQueue.add(putObject.get(i));
+          }
           break;
         }
         case QUEUE_REMOVE :
         {
-          sendingQueue.remove();
+          while(true){
+            if(sendingQueue.size() > 0) {
+              if(sendingQueue.get(0).remaining() == 0){
+                sendingQueue.remove(0);
+              }else{
+                break;
+              }
+            }else{
+              break;
+            }
+          }
           break;
         }
         case QUEUE_SIZE :

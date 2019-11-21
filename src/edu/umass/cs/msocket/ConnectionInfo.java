@@ -2023,15 +2023,6 @@ public class ConnectionInfo
     long startTime = System.currentTimeMillis();
     @SuppressWarnings("unchecked")
     ArrayList<ByteBuffer> writebuf = (ArrayList<ByteBuffer>) Obj.queueOperations(SocketInfo.QUEUE_GET_OPT, null);
-    //this counts how many bytes are left in the list of Bytebuffers
-    int len = 0;
-    for(int i=0;i<writebuf.size();i++){
-        if(writebuf.get(i).hasRemaining()){
-            len += writebuf.get(i).remaining();
-        }
-
-    }
-
     //Writing as much as possible in one go.
     int ind = 0;
     int gotWritten=0;
@@ -2048,12 +2039,7 @@ public class ConnectionInfo
         }
 
     }
-
-    //completely written. Time to remove from the head of queue and reset it
-    if (len == 0)
-    {
-      Obj.queueOperations(SocketInfo.QUEUE_REMOVE, null);
-    }
+    Obj.queueOperations(SocketInfo.QUEUE_REMOVE, null);
     long endTime = System.currentTimeMillis();
 
 
