@@ -512,7 +512,8 @@ public class MSocket extends Socket implements MultipathInterface
 	    connectionInfo.setState(ConnectionInfo.ALL_READY, true);
 
 	    connectionInfo.setServerOrClient(MSocketConstants.CLIENT);
-
+      System.out.println("setting TCP NO DELAY ");
+        connectionInfo.setTcpNoDelay(true);
 	    registerWithClientManager();
 
 	    //localTimer = new Timer();
@@ -1052,6 +1053,9 @@ public class MSocket extends Socket implements MultipathInterface
     if (res.getSuccessful())
     {
       SocketInfo sockInfo = connectionInfo.getSocketInfo(res.getSocketID());
+
+
+
       FlowPath nfp = new FlowPath(res.getSocketID(),
     		  sockInfo.getSocket().getLocalSocketAddress(), sockInfo.getSocket()
           .getRemoteSocketAddress());

@@ -89,6 +89,7 @@ public class MSocketClient {
 
         try {
         	MSocket ms = new MSocket(InetAddress.getByName(serverIPOrName), serverPort);
+//        	ms.setTcpNoDelay(true);
             OutputStream os = ms.getOutputStream();
             InputStream is = ms.getInputStream();
 

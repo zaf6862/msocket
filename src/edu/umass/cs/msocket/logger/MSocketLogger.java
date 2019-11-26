@@ -19,10 +19,10 @@ public class MSocketLogger
 
 
 
-		 // ConsoleHandler ch = new ConsoleHandler();
-  		 // ch.setLevel(Level.FINE);
-  		 // LOGGER.addHandler(ch);
-  		 // LOGGER.setLevel(Level.FINE);
+		  ConsoleHandler ch = new ConsoleHandler();
+//  		  ch.setLevel(Level.WARNING);
+//  		  LOGGER.addHandler(ch);
+//  		  LOGGER.setLevel(Level.WARNING);
         // Logger l0 = Logger.getLogger("");
   		// l0.removeHandler(l0.getHandlers()[0]);
 	}
