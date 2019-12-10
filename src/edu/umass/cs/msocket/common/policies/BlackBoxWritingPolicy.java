@@ -194,7 +194,7 @@ public class BlackBoxWritingPolicy extends MultipathWritingPolicy
 
 		        if ((Integer) sockObj.queueOperations(SocketInfo.QUEUE_SIZE, null) > 0)
 		        {
-		          cinfo.attemptSocketWrite(sockObj);
+		          cinfo.attemptSocketWriteOptimized(sockObj);
 		          sockObj.releaseLock();
 		          return false;
 		        }
@@ -204,7 +204,7 @@ public class BlackBoxWritingPolicy extends MultipathWritingPolicy
 		        	sockObj.byteInfoVectorOperations(SocketInfo.QUEUE_PUT, startSeqNum, tobesent);
 		        }
 
-		        cinfo.attemptSocketWrite(sockObj);
+		        cinfo.attemptSocketWriteOptimized(sockObj);
 		        //if (cinfo.getServerOrClient() == MSocketConstants.CLIENT)
 		        {
 

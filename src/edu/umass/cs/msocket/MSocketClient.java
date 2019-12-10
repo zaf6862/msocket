@@ -20,7 +20,7 @@ public class MSocketClient {
 
     private static final int TOTAL_ROUND = 1;
 
-    private static int numBytes = 1;
+    private static int numBytes = 100;
 
 
     public static double calc_avg(Long[] input){
