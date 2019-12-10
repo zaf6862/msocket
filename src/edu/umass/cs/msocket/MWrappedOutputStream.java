@@ -26,12 +26,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-//import edu.umass.cs.msocket.common.policies.BlackBoxWritingPolicy;
-//import edu.umass.cs.msocket.common.policies.FullDuplicationWritingPolicy;
+import edu.umass.cs.msocket.common.policies.BlackBoxWritingPolicy;
+import edu.umass.cs.msocket.common.policies.FullDuplicationWritingPolicy;
 import edu.umass.cs.msocket.common.policies.MultipathWritingPolicy;
 import edu.umass.cs.msocket.common.policies.RTTBasedWritingPolicy;
-//import edu.umass.cs.msocket.common.policies.RoundRobinWritingPolicy;
-//import edu.umass.cs.msocket.common.policies.ReMP;
+import edu.umass.cs.msocket.common.policies.RoundRobinWritingPolicy;
+import edu.umass.cs.msocket.common.policies.ReMP;
 import edu.umass.cs.msocket.logger.MSocketLogger;
 import io.netty.buffer.ByteBuf;
 
@@ -72,26 +72,26 @@ public class MWrappedOutputStream extends OutputStream
 	    	}
 	    	case MULTIPATH_POLICY_FULL_DUP:
 	    	{
-//	    		MultipathWritingPolicy multipathPolicy = new FullDuplicationWritingPolicy(cinfo);
-//	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
+	    		MultipathWritingPolicy multipathPolicy = new FullDuplicationWritingPolicy(cinfo);
+	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
 	    		break;
 	    	}
 	    	case MULTIPATH_POLICY_ROUNDROBIN:
 	    	{
-//	    		MultipathWritingPolicy multipathPolicy = new RoundRobinWritingPolicy(cinfo);
-//	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
+	    		MultipathWritingPolicy multipathPolicy = new RoundRobinWritingPolicy(cinfo);
+	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
 	    		break;
 	    	}
 	    	case MULTIPATH_POLICY_BLACKBOX:
 	    	{
-//	    		MultipathWritingPolicy multipathPolicy = new BlackBoxWritingPolicy(cinfo);
-//	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
+	    		MultipathWritingPolicy multipathPolicy = new BlackBoxWritingPolicy(cinfo);
+	    		cinfo.setMultipathWritingPolicy(multipathPolicy);
 	    		break;
 	    	}
         case MULTIPATH_POLICY_REMP:
         {
-//          MultipathWritingPolicy multipathPolicy = new ReMP(cinfo);
-//          cinfo.setMultipathWritingPolicy(multipathPolicy);
+          MultipathWritingPolicy multipathPolicy = new ReMP(cinfo);
+          cinfo.setMultipathWritingPolicy(multipathPolicy);
           break;
         }
 	    }
