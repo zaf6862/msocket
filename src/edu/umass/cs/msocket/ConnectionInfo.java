@@ -2029,7 +2029,7 @@ public class ConnectionInfo
     while(true){
         gotWritten += Obj.getDataChannel().write(writebuf.get(ind));
         if(writebuf.get(ind).remaining() == 0){
-          if(ind == writebuf.size() -1 ){
+          if(ind == writebuf.size() - 1 ){
             break;
           }else{
             ind += 1;
