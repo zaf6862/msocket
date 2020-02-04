@@ -512,7 +512,6 @@ public class MSocket extends Socket implements MultipathInterface
 	    connectionInfo.setState(ConnectionInfo.ALL_READY, true);
 
 	    connectionInfo.setServerOrClient(MSocketConstants.CLIENT);
-      System.out.println("setting TCP NO DELAY ");
         connectionInfo.setTcpNoDelay(true);
 	    registerWithClientManager();
 

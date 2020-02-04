@@ -77,14 +77,11 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
         ex.printStackTrace();
       }
 
-      SocketInfo Obj = getNextSocketToWrite(); 				// randomly
-                                                           // choosing the
-                                                           // socket to send
-                                                           // chunk
+      SocketInfo Obj = getNextSocketToWrite();
+      System.out.println("Local Address: " + Obj.getSocket().getLocalAddress());
       if (Obj != null)
       {
-        while (!Obj.acquireLock())
-          ;
+        while (!Obj.acquireLock());
         Obj.byteInfoVectorOperations(SocketInfo.QUEUE_REMOVE, cinfo.getDataBaseSeq(), -1);
         int tobesent = 0;
         if (remaining < MWrappedOutputStream.WRITE_CHUNK_SIZE)
@@ -120,20 +117,6 @@ public class RTTBasedWritingPolicy extends MultipathWritingPolicy
                   arrayCopyOffset);
           ArrayList<ByteBuffer> writebuf = dm.getBytes();
 
-          //TAG: Come back and change this once you have ensured that read latency is not there
-//          int len = 0;
-//          for (int i=0;i< writebuf.size();i++){
-//            len += writebuf.get(i).remaining();
-//          }
-//          byte[] writebuff = new byte[len];
-//          int ind=0;
-//          for(int i=0;i<writebuf.size();i++){
-//              byte[] t = writebuf.get(i).array();
-//              for (int j=0;j<t.length;j++){
-//                writebuff[ind] = t[j];
-//                ind +=1;
-//              }
-//          }
 
           // exception of write means that socket is undergoing migration,
           // make it not active, and transfer same data chunk over another
